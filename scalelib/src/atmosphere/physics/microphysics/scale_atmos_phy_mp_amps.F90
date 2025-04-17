@@ -3516,7 +3516,7 @@ contains
 
     real(RP) :: CM32M3
 
-    real(RP) :: q, qn
+    real(RP) :: Q, QN
     integer  :: ic
 
 
@@ -3597,7 +3597,7 @@ contains
 
        !$omp parallel do collapse(2) default(none) &
        !$omp private(i,j,k,ibin,bin_check,r_t2,dropletMass,hdl_apt,r_i,apt_ini, &
-       !$omp         ic,q,qn) &
+       !$omp         ic,Q,QN) &
        !$omp shared(JS,JE,IS,IE,KS,KE,nbr, &
        !$omp        lcon_index,lamt_index,lams_index,numberPPVL, &
        !$omp        local_binbr,CM32M3, &
@@ -3606,14 +3606,11 @@ contains
        do i = IS, IE
        do k = KS, KE
           bin_check = 0
-          do ic = 1, 2
-             if ( ic==1 ) then
-                q = Qe(k,i,j,I_HC)
-             else
-                q = Qe(k,i,j,I_HR)
-             end if
-             if ( Q == 0.0_RP .or. QN == 0.0_RP ) cycle
+          Q = Qe(k,i,j,I_HC) + Qe(k,i,j,I_HR)
+          QN = Qnum(k,i,j,I_HC) + Qnum(k,i,j,I_HR)
+          if ( Q == 0.0_RP .or. QN == 0.0_RP ) then
              bin_check = 1
+          else
              r_t2 = r_t
              dropletMass = Q * DENS(k,i,j) * 0.001_RP / QN * CM32M3
              do ibin = 1, nbr
@@ -3648,16 +3645,16 @@ contains
                          bin_check = 1
                       endif
                    enddo
-
                    exit
                 endif
              enddo ! ibin
-          enddo ! iq
+             LOG_INFO("debugging: ",'(4I5, 4ES15.6)') k, i, j, bin_check, Qe(k,i,j,I_HC), QNUM(k,i,j,I_HC)/CM32M3, dropletMass, local_binbr(1)
+          endif
 
-          !if ( bin_check == 0 ) then
-          !   write(*,*) "ATMOS_PHY_MP_amps_qhyd2qtrc: The droplet mass is not within the bin region", Qe(k,i,j,I_HC), QNUM(k,i,j,I_HC)/CM32M3, local_binbr(1), Qe(k,i,j,I_HC)*DENS(k,i,j)*0.001_RP/QNUM(k,i,j,I_HC)*CM32M3, local_binbr(nbr+1), hdl_apt
-          !   call PRC_abort
-          !endif
+          if ( bin_check == 0 ) then
+             write(*,*) "ATMOS_PHY_MP_amps_qhyd2qtrc: The droplet mass is not within the bin region", Qe(k,i,j,I_HC), QNUM(k,i,j,I_HC)/CM32M3, local_binbr(1), Qe(k,i,j,I_HC)*DENS(k,i,j)*0.001_RP/QNUM(k,i,j,I_HC)*CM32M3, local_binbr(nbr+1), hdl_apt
+             call PRC_abort
+          endif
        end do
        end do
        end do
