@@ -427,6 +427,12 @@ contains
                                         QTRC(:,:,:,QS_MP:QE_MP),  & ! [OUT]
                                         QNUM=QNUM(:,:,:,:)        ) ! [IN]
 
+
+    LOG_INFO("DEBUG: ", *) "below is debugging message"
+    do k = KS, KE
+       LOG_INFO("debugging vertical profile: ",'(I5, 6ES15.6)') k, MAXVAL(QTRC(k,:,:,QS_MP+1)), MAXVAL(QHYD(k,:,:,I_HC)), MAXVAL(QNUM(k,:,:,I_HC)), MINVAL(QTRC(k,:,:,QS_MP+1)), MINVAL(QHYD(k,:,:,I_HC)), MINVAL(QNUM(k,:,:,I_HC))
+    enddo
+
     !$acc end data
 
     return

@@ -18,4 +18,4 @@ module load zlib/1.3-mktm5vz
 
 export OMP_STACKSIZE=16M
 
-mpirun -n 10 --mca orte_base_help_aggregate 0 ./scale-rm run.conf
+mpirun -n 10 ./scale-rm run.conf
