@@ -3049,11 +3049,11 @@ contains
     real(RP) :: rho_ice, rho_rim, rho_agg, rho_cry, rho_con, rho_a, rho_c, rho_vol, rho_nex, alpha, kp
     real(RP) :: temp1, temp2
     real(RP) :: kcsw, vcs, vcsw, vim, vspace, semi_a, semi_c, micore
-    real(RP) :: Rmax, sum3, sum2, conc, sum_q
+    real(RP) :: Rmax, sum3, sum2, conc, sum_q, sum3_I_HI, sum2_I_HI, conc_I_HI, sum_q_I_HI, sum3_I_HS, sum2_I_HS, conc_I_HS, sum_q_I_HS, sum3_I_HG, sum2_I_HG, conc_I_HG, sum_q_I_HG
     real(RP) :: r3, factor
     integer  :: i, j, k, iq, iq1, iq2
     integer  :: ic
-    integer  :: liqConc_index, iceConc_index, rim_index, agg_index, cry_index, snow_type
+    integer  :: liqConc_index, iceConc_index, rim_index, agg_index, cry_index, ice_type
     integer  :: a_index, c_index, vol_index, nexice_index
 
 
@@ -3144,175 +3144,176 @@ contains
        ! under construction, calculate maximum dimension according to their shape
 
        !$omp parallel do collapse(2) default(none) &
-       !$omp private(i,j,k,ic,iq,iq1,iq2, &
-       !$omp         sum2,sum3,conc,sum_q,rho_rim,rho_agg,rho_cry,rho_ice,rho_con, &
-       !$omp         rho_a,rho_c,rho_vol,rho_nex,snow_type,alpha,kp,temp1,temp2, &
+       !$omp private(i,j,k,iq, &
+       !$omp         rho_rim,rho_agg,rho_cry,rho_ice,rho_con, &
+       !$omp         sum3_I_HI,sum2_I_HI,conc_I_HI,sum_q_I_HI,sum3_I_HS,sum2_I_HS,conc_I_HS,sum_q_I_HS,sum3_I_HG,sum2_I_HG,conc_I_HG,sum_q_I_HG, &
+       !$omp         rho_a,rho_c,rho_vol,rho_nex,ice_type,alpha,kp,temp1,temp2, &
        !$omp         vcs,micore,semi_a,semi_c,vim,vspace,kcsw,vcsw,Rmax,factor) &
        !$omp shared(JS,JE,IS,IE,KS,KE,nbi,ibin_is,ibin_sg,ibin_gh, &
-       !$omp        I_QI,I_QW,rim_index,agg_index,cry_index,iceConc_index,a_index,c_index, &
+       !$omp        I_HI,I_HS,I_HG,I_QI,I_QW,rim_index,agg_index,cry_index,iceConc_index,a_index,c_index, &
        !$omp        vol_index,nexice_index,numberPPVI, &
-       !$omp        l_gaxis_version, &
+       !$omp        l_gaxis_version,RILMTB,oneThirdFactor, &
        !$omp        Re,QTRC0,DENS0)
        do j = JS, JE
        do i = IS, IE
        do k = KS, KE
 
-          do ic = 1, 4
-
-             if ( ic == 1 ) then
-                iq1 = 1
-                iq2 = ibin_is
-             else if ( ic == 2 ) then
-                iq1 = ibin_is + 1
-                iq2 = ibin_sg
-             else if ( ic == 3 ) then
-                iq1 = ibin_sg + 1
-                iq2 = ibin_gh
+          sum3_I_HI = 0.0_RP
+          sum3_I_HS = 0.0_RP
+          sum3_I_HG = 0.0_RP
+          sum2_I_HI = 0.0_RP
+          sum2_I_HS = 0.0_RP
+          sum2_I_HG = 0.0_RP
+          conc_I_HI = 0.0_RP
+          conc_I_HS = 0.0_RP
+          conc_I_HG = 0.0_RP
+          sum_q_I_HI = 0.0_RP
+          sum_q_I_HS = 0.0_RP
+          sum_q_I_HG = 0.0_RP
+          
+          do iq = 1, nbi
+             rho_rim = QTRC0(k,i,j,rim_index+(iq-1)*numberPPVI)     * DENS0(k,i,j)  ! kg/m3
+             rho_agg = QTRC0(k,i,j,agg_index+(iq-1)*numberPPVI)     * DENS0(k,i,j)  ! kg/m3
+             rho_cry = QTRC0(k,i,j,cry_index+(iq-1)*numberPPVI)     * DENS0(k,i,j)  ! kg/m3
+             rho_ice = QTRC0(k,i,j,I_QI+iq-2)                       * DENS0(k,i,j)  ! kg/m3
+             rho_con = QTRC0(k,i,j,iceConc_index+(iq-1)*numberPPVI) * DENS0(k,i,j)  ! /cm3
+             rho_a   = QTRC0(k,i,j,a_index+(iq-1)*numberPPVI)       * DENS0(k,i,j)  ! cm3/cm3
+             if (l_gaxis_version == 1 .or.l_gaxis_version == 3) then
+                rho_c   = QTRC0(k,i,j,c_index+(iq-1)*numberPPVI)    * DENS0(k,i,j)  ! cm3/cm3
              else
-                iq1 = ibin_gh + 1
-                iq2 = nbi
-             end if
-
-             sum3 = 0.0_RP
-             sum2 = 0.0_RP
-             conc = 0.0_RP
-             sum_q = 0.0_RP
-
-             do iq = iq1, iq2
-                rho_rim = QTRC0(k,i,j,rim_index+(iq-1)*numberPPVI)     * DENS0(k,i,j)  ! kg/m3
-                rho_agg = QTRC0(k,i,j,agg_index+(iq-1)*numberPPVI)     * DENS0(k,i,j)  ! kg/m3
-                rho_cry = QTRC0(k,i,j,cry_index+(iq-1)*numberPPVI)     * DENS0(k,i,j)  ! kg/m3
-                rho_ice = QTRC0(k,i,j,I_QI+iq-2)                       * DENS0(k,i,j)  ! kg/m3
-                rho_con = QTRC0(k,i,j,iceConc_index+(iq-1)*numberPPVI) * DENS0(k,i,j)  ! /cm3
-                rho_a   = QTRC0(k,i,j,a_index+(iq-1)*numberPPVI)       * DENS0(k,i,j)  ! cm3/cm3
-                if (l_gaxis_version == 1 .or.l_gaxis_version == 3) then
-                   rho_c   = QTRC0(k,i,j,c_index+(iq-1)*numberPPVI)    * DENS0(k,i,j)  ! cm3/cm3
+                if (QTRC0(k,i,j,iceConc_index+(iq-1)*numberPPVI) < 1.e-22_RP) then
+                   rho_c   = 0.0_RP                                                 ! cm3/cm3
                 else
-                   if (QTRC0(k,i,j,iceConc_index+(iq-1)*numberPPVI) < 1.e-22_RP) then
-                      rho_c   = 0.0_RP                                                 ! cm3/cm3
-                   else
-                      rho_c   = QTRC0(k,i,j,c_index+(iq-1)*numberPPVI) * &
-                                QTRC0(k,i,j,a_index+(iq-1)*numberPPVI) / &
-                                QTRC0(k,i,j,iceConc_index+(iq-1)*numberPPVI) * DENS0(k,i,j)  ! cm3/cm3
-                   endif
+                   rho_c   = QTRC0(k,i,j,c_index+(iq-1)*numberPPVI) * &
+                             QTRC0(k,i,j,a_index+(iq-1)*numberPPVI) / &
+                             QTRC0(k,i,j,iceConc_index+(iq-1)*numberPPVI) * DENS0(k,i,j)  ! cm3/cm3
                 endif
-                rho_vol = QTRC0(k,i,j,vol_index+(iq-1)*numberPPVI)     * DENS0(k,i,j)  ! cm3/cm3
-                rho_nex = QTRC0(k,i,j,nexice_index+(iq-1)*numberPPVI)  * DENS0(k,i,j)  ! /cm3
-                if ( rho_ice <= RILMTB .or. &
-                     rho_con <= RILMTB .or. &
-                     rho_a   <= RILMTB .or. &
-                     rho_c   <= RILMTB .or. &
-                     rho_vol <= RILMTB) then
-                   cycle
-                endif
-                ! first, we decide the type of snow
-                ! if rimed mass is greater than 10% of total mass
-                if ( rho_rim > 0.1_RP*rho_ice ) then
-                   ! if 10% of total mass is greater than aggregate mass
-                   if ( 0.1_RP*rho_ice > rho_agg ) then
-                      ! if crystal mass is greater than rimed mass
-                      if ( rho_cry > rho_rim ) then
-                         ! rimed crystal
-                         snow_type = 3
-                      else
-                         ! graupel
-                         snow_type = 5
-                      endif
-                   else
-                      ! if rimed mass is greater than aggregate mass
-                      if ( rho_rim > rho_agg ) then
-                         ! graupel
-                         snow_type = 5
-                      else
-                         ! rimed aggregate
-                         snow_type = 4
-                      endif
-                   endif
-                else
-                   ! if 10% of total mass is greater than aggregate mass
-                   if ( 0.1_RP*rho_ice > rho_agg ) then
-                      ! pristine crystal
-                      snow_type = 1
-                   else
-                      ! aggregate
-                      snow_type = 2
-                   endif
-                endif
-
-                ! calculate the aspect ratio
-                if ( snow_type == 1 ) then ! pristine crystal
-                   if ( rho_nex / rho_con < 0.5_RP ) then
-                      alpha = ( rho_a / rho_c )**oneThirdFactor
-                   else
-                      alpha = 0.25_RP
-                   endif
-                else if ( snow_type == 2 .or. snow_type == 4 ) then ! aggregate or rimed aggregate
-                   temp1 = rho_agg + rho_cry
-                   temp2 = 10.0_RP * rho_cry
-                   if ( temp1 >= temp2 ) then
-                      alpha = oneThirdFactor
-                   else
-                      alpha = ( rho_a / rho_c )**oneThirdFactor
-                      kp = log10(oneThirdFactor/alpha)
-                      alpha = ((temp1/temp2)**kp)/3.0_RP
-                   endif
-                else if ( snow_type == 3 ) then ! rimed crystal
-                   ! SUBJECT TO MODIFICATION IN THE FUTURE,
-                   ! FOR NOW ALPHA FOR RIMED CRYSTALS IS THE SAME AS FOR CRYSTALS
-                   if ( rho_nex / rho_con < 0.5_RP  ) then
-                      alpha = ( rho_a / rho_c )**oneThirdFactor
-                   else
-                      alpha = 0.25_RP
-                   endif
-                else if ( snow_type == 5 ) then ! graupel
-                   temp1 = rho_agg + rho_cry + rho_rim
-                   temp2 = 10.0_RP * (rho_Cry + rho_agg)
-                   if ( temp1 >= temp2 ) then
-                      alpha = 0.8_RP
-                   else
-                      alpha = ( rho_a / rho_c )**oneThirdFactor
-                      kp = log10(0.8_RP/alpha)
-                      alpha = ((temp1/temp2)**kp)*0.8_RP
-                   endif
-                endif
-
-                !                                                            unit:
-                vcs = rho_vol / rho_con                                    ! cm3
-                temp1 = QTRC0(k,i,j,I_QW+iq-2) * DENS0(k,i,j) / &          ! kg/m3
-                     rho_con / M32CM3                                   ! kg
-                if ( snow_type == 5 ) then ! graupel
-                   factor = cylinderFactor
-                   semi_a = max(1.0_RP, alpha**3)
-                else
-                   factor = multiplicativeFactor
-                   semi_a = sqrt(1.0_RP + alpha**2)**3
-                endif
-                semi_a = (vcs / factor / semi_a)**oneThirdFactor           ! cm
-                semi_c = semi_a/alpha                                      ! cm
-                micore = rho_ice &                                         ! kg/m3
-                     / rho_con / M32CM3 &                                  ! kg
-                     - temp1
-                vim = factor*semi_c*semi_a**2                              ! cm3
-                vspace = max(0.0_RP,vim - micore/den_ice)                  ! cm3
-                kcsw = 1.0_RP + max(0.0_RP, temp1/den_water - vspace)/vim
-                vcsw = kcsw*vcs                                            ! cm3
-
-                Rmax = (vcsw/multiplicativeFactor)**oneThirdFactor         ! cm
-
-                sum3 = sum3 + Rmax**3*rho_con    ! cm3/cm3
-                sum2 = sum2 + Rmax**2*rho_con    ! cm2/cm3
-                conc = conc + rho_con            ! /cm3
-                sum_q = sum_q + QTRC0(k,i,j,I_QI+iq-2)
-
-             end do ! iq
-
-             if ( conc > 0.0_RP .and. sum_q > RLMTB ) then
-                Re(k,i,j,I_HI+ic-1) = sum3/sum2
-             else
-                Re(k,i,j,I_HI+ic-1) = 0.0_RP
              endif
+             rho_vol = QTRC0(k,i,j,vol_index+(iq-1)*numberPPVI)     * DENS0(k,i,j)  ! cm3/cm3
+             rho_nex = QTRC0(k,i,j,nexice_index+(iq-1)*numberPPVI)  * DENS0(k,i,j)  ! /cm3
+             if ( rho_ice <= RILMTB .or. &
+                  rho_con <= RILMTB .or. &
+                  rho_a   <= RILMTB .or. &
+                  rho_c   <= RILMTB .or. &
+                  rho_vol <= RILMTB) then
+                cycle
+             endif
+             ! first, we decide the type of ice particle
+             call determine_ice_type( &
+                ice_type,             &
+                rho_rim,              &
+                rho_agg,              &
+                rho_cry,              &
+                rho_ice               )
+             
+             ! calculate the aspect ratio
+             if ( ice_type == 1 ) then ! pristine crystal
+                if ( rho_nex / rho_con < 0.5_RP ) then
+                   alpha = ( rho_a / rho_c )**oneThirdFactor
+                else
+                   alpha = 0.25_RP
+                endif
+             else if ( ice_type == 2 .or. ice_type == 4 ) then ! aggregate or rimed aggregate
+                temp1 = rho_agg + rho_cry
+                temp2 = 10.0_RP * rho_cry
+                if ( temp1 >= temp2 ) then
+                   alpha = oneThirdFactor
+                else
+                   alpha = ( rho_a / rho_c )**oneThirdFactor
+                   kp = log10(oneThirdFactor/alpha)
+                   alpha = ((temp1/temp2)**kp)/3.0_RP
+                endif
+             else if ( ice_type == 3 ) then ! rimed crystal
+                ! SUBJECT TO MODIFICATION IN THE FUTURE,
+                ! FOR NOW ALPHA FOR RIMED CRYSTALS IS THE SAME AS FOR CRYSTALS
+                if ( rho_nex / rho_con < 0.5_RP  ) then
+                   alpha = ( rho_a / rho_c )**oneThirdFactor
+                else
+                   alpha = 0.25_RP
+                endif
+             else if ( ice_type == 5 ) then ! graupel
+                temp1 = rho_agg + rho_cry + rho_rim
+                temp2 = 10.0_RP * (rho_Cry + rho_agg)
+                if ( temp1 >= temp2 ) then
+                   alpha = 0.8_RP
+                else
+                   alpha = ( rho_a / rho_c )**oneThirdFactor
+                   kp = log10(0.8_RP/alpha)
+                   alpha = ((temp1/temp2)**kp)*0.8_RP
+                endif
+             endi 
+             !                                                            unit:
+             vcs = rho_vol / rho_con                                    ! cm3
+             temp1 = QTRC0(k,i,j,I_QW+iq-2) * DENS0(k,i,j) / &          ! kg/m3
+                  rho_con / M32CM3                                   ! kg
+             if ( ice_type == 5 ) then ! graupel
+                factor = cylinderFactor
+                semi_a = max(1.0_RP, alpha**3)
+             else
+                factor = multiplicativeFactor
+                semi_a = sqrt(1.0_RP + alpha**2)**3
+             endif
+             semi_a = (vcs / factor / semi_a)**oneThirdFactor           ! cm
+             semi_c = semi_a/alpha                                      ! cm
+             micore = rho_ice &                                         ! kg/m3
+                  / rho_con / M32CM3 &                                  ! kg
+                  - temp1
+             vim = factor*semi_c*semi_a**2                              ! cm3
+             vspace = max(0.0_RP,vim - micore/den_ice)                  ! cm3
+             kcsw = 1.0_RP + max(0.0_RP, temp1/den_water - vspace)/vim
+             vcsw = kcsw*vcs                                            ! cm 
+             Rmax = (vcsw/multiplicativeFactor)**oneThirdFactor         ! c 
+             select case(ice_type)
+             case(1)
+                ! pristine crytals
+                sum3_I_HI = sum3_I_HI + Rmax**3*rho_con    ! cm3/cm3
+                sum2_I_HI = sum2_I_HI + Rmax**2*rho_con    ! cm2/cm3
+                conc_I_HI = conc_I_HI + rho_con            ! /cm3
+                sum_q_I_HI = sum_q_I_HI + QTRC0(k,i,j,I_QI+iq-2)
+             case(2)
+                ! aggregate
+                sum3_I_HS = sum3_I_HS + Rmax**3*rho_con    ! cm3/cm3
+                sum2_I_HS = sum2_I_HS + Rmax**2*rho_con    ! cm2/cm3
+                conc_I_HS = conc_I_HS + rho_con            ! /cm3
+                sum_q_I_HS = sum_q_I_HS + QTRC0(k,i,j,I_QI+iq-2)
+             case(3)
+                ! rimed crystals
+                sum3_I_HS = sum3_I_HS + Rmax**3*rho_con    ! cm3/cm3
+                sum2_I_HS = sum2_I_HS + Rmax**2*rho_con    ! cm2/cm3
+                conc_I_HS = conc_I_HS + rho_con            ! /cm3
+                sum_q_I_HS = sum_q_I_HS + QTRC0(k,i,j,I_QI+iq-2)
+             case(4)
+                ! rimed aggregate
+                sum3_I_HS = sum3_I_HS + Rmax**3*rho_con    ! cm3/cm3
+                sum2_I_HS = sum2_I_HS + Rmax**2*rho_con    ! cm2/cm3
+                conc_I_HS = conc_I_HS + rho_con            ! /cm3
+                sum_q_I_HS = sum_q_I_HS + QTRC0(k,i,j,I_QI+iq-2)
+             case(5)
+                ! graupel
+                sum3_I_HG = sum3_I_HG + Rmax**3*rho_con    ! cm3/cm3
+                sum2_I_HG = sum2_I_HG + Rmax**2*rho_con    ! cm2/cm3
+                conc_I_HG = conc_I_HG + rho_con            ! /cm3
+                sum_q_I_HG = sum_q_I_HG + QTRC0(k,i,j,I_QI+iq-2)
+             end select
+          end do ! iq
 
-          end do ! ic
+          if ( conc_I_HI > 0.0_RP .and. sum_q_I_HI > RLMTB ) then
+             Re(k,i,j,I_HI-1) = sum3_I_HI/sum2_I_HI
+          else
+             Re(k,i,j,I_HI-1) = 0.0_RP
+          endif
+
+          if ( conc_I_HS > 0.0_RP .and. sum_q_I_HS > RLMTB ) then
+             Re(k,i,j,I_HS-1) = sum3_I_HS/sum2_I_HS
+          else
+             Re(k,i,j,I_HS-1) = 0.0_RP
+          endif
+
+          if ( conc_I_HG > 0.0_RP .and. sum_q_I_HG > RLMTB ) then
+             Re(k,i,j,I_HG-1) = sum3_I_HG/sum2_I_HG
+          else
+             Re(k,i,j,I_HG-1) = 0.0_RP
+          endif
 
        enddo
        enddo
@@ -3517,8 +3518,7 @@ contains
     real(RP) :: CM32M3
 
     real(RP) :: Q, QN
-    integer  :: ic
-
+    
 
     CM32M3 = 1000000.0_RP
 
@@ -3597,7 +3597,7 @@ contains
 
        !$omp parallel do collapse(2) default(none) &
        !$omp private(i,j,k,ibin,bin_check,r_t2,dropletMass,hdl_apt,r_i,apt_ini, &
-       !$omp         ic,Q,QN) &
+       !$omp         Q,QN) &
        !$omp shared(JS,JE,IS,IE,KS,KE,nbr, &
        !$omp        lcon_index,lamt_index,lams_index,numberPPVL, &
        !$omp        local_binbr,CM32M3, &
@@ -3709,7 +3709,7 @@ contains
     real(RP), intent(in)  :: QTRC0(KA,IA,JA,QA-1)      ! tracer mass concentration [kg/kg]
     real(RP), intent(out) :: Qe   (KA,IA,JA,N_HYD)     ! mixing ratio of each cateory [kg/kg]
 
-    integer :: ibin
+    integer :: ibin, ice_type
     integer :: k, i, j
     !---------------------------------------------------------------------------
 
@@ -3719,9 +3719,10 @@ contains
     !$omp end workshare
 
     !$omp parallel do collapse(2) default(none) &
-    !$omp private(i,j,k,ibin) &
-    !$omp shared(JS,JE,IS,IE,KS,KE, &
+    !$omp private(i,j,k,ibin,ice_type) &
+    !$omp shared(JS,JE,IS,IE,KS,KE,I_HC,I_HR,I_HI,I_HS,I_HG, &
     !$omp        split_bins,nbr,nbi,ibin_is,ibin_sg,ibin_gh,I_QI,I_QW, &
+    !$omp        rim_index,agg_index,cry_index,numberPPVI, &
     !$omp        Qe,QTRC0)
     do j = JS, JE
     do i = IS, IE
@@ -3731,30 +3732,54 @@ contains
       do ibin = 1, split_bins
          Qe(k,i,j,I_HC) = Qe(k,i,j,I_HC) + QTRC0(k,i,j,ibin)
       enddo
-      do ibin = 1, ibin_is
-         Qe(k,i,j,I_HC) = Qe(k,i,j,I_HC) + QTRC0(k,i,j,I_QW+ibin-2)
-      end do
       ! rain
       do ibin = split_bins+1, nbr
          Qe(k,i,j,I_HR) = Qe(k,i,j,I_HR) + QTRC0(k,i,j,ibin)
       enddo
-      do ibin = ibin_is+1, nbi
+      ! melt water (in AMPS, melt water is attached to ice particles. Currently, it is decided to treat melt water as rain in traditional six-class categorization)
+      do ibin = 1, nbi
          Qe(k,i,j,I_HR) = Qe(k,i,j,I_HR) + QTRC0(k,i,j,I_QW+ibin-2)
       end do
 
       ! --- ice spectrum
-      do ibin = 1, ibin_is
-         Qe(k,i,j,I_HI) = Qe(k,i,j,I_HI) + QTRC0(k,i,j,I_QI+ibin-2)
+      do ibin = 1, nbi
+         call determine_ice_type(                       &
+            ice_type,                                   &
+            QTRC0(k,i,j,rim_index+(ibin-1)*numberPPVI), &
+            QTRC0(k,i,j,agg_index+(ibin-1)*numberPPVI), &
+            QTRC0(k,i,j,cry_index+(ibin-1)*numberPPVI), &
+            QTRC0(k,i,j,I_QI+ibin-2)                    )
+         select case(ice_type)
+         case(1)
+            ! pristine crytals
+            Qe(k,i,j,I_HI) = Qe(k,i,j,I_HI) + QTRC0(k,i,j,I_QI+ibin)
+         case(2)
+            ! aggregate
+            Qe(k,i,j,I_HS) = Qe(k,i,j,I_HS) + QTRC0(k,i,j,I_QI+ibin)
+         case(3)
+            ! rimed crystals
+            Qe(k,i,j,I_HS) = Qe(k,i,j,I_HS) + QTRC0(k,i,j,I_QI+ibin)
+         case(4)
+            ! rimed aggregate
+            Qe(k,i,j,I_HS) = Qe(k,i,j,I_HS) + QTRC0(k,i,j,I_QI+ibin)
+         case(5)
+            ! graupel
+            Qe(k,i,j,I_HG) = Qe(k,i,j,I_HG) + QTRC0(k,i,j,I_QI+ibin)
+         end select
       enddo
-      do ibin = ibin_is+1, ibin_sg
-         Qe(k,i,j,I_HS) = Qe(k,i,j,I_HS) + QTRC0(k,i,j,I_QI+ibin-2)
-      enddo
-      do ibin = ibin_sg+1, ibin_gh
-         Qe(k,i,j,I_HI) = Qe(k,i,j,I_HI) + QTRC0(k,i,j,I_QI+ibin-2)
-      enddo
-      do ibin = ibin_gh+1, nbi
-         Qe(k,i,j,I_HI) = Qe(k,i,j,I_HI) + QTRC0(k,i,j,I_QI+ibin-2)
-      enddo
+      
+      ! do ibin = 1, ibin_is
+      !    Qe(k,i,j,I_HI) = Qe(k,i,j,I_HI) + QTRC0(k,i,j,I_QI+ibin-2)
+      ! enddo
+      ! do ibin = ibin_is+1, ibin_sg
+      !    Qe(k,i,j,I_HS) = Qe(k,i,j,I_HS) + QTRC0(k,i,j,I_QI+ibin-2)
+      ! enddo
+      ! do ibin = ibin_sg+1, ibin_gh
+      !    Qe(k,i,j,I_HI) = Qe(k,i,j,I_HI) + QTRC0(k,i,j,I_QI+ibin-2)
+      ! enddo
+      ! do ibin = ibin_gh+1, nbi
+      !    Qe(k,i,j,I_HI) = Qe(k,i,j,I_HI) + QTRC0(k,i,j,I_QI+ibin-2)
+      ! enddo
 
     enddo
     enddo
@@ -3792,7 +3817,7 @@ contains
     real(RP), intent(out) :: Ne   (KA,IA,JA,N_HYD)     ! number concentration of each cateory [1/m3]
 
     real(RP) :: CM32M3
-    integer :: ibin, liqConc_index, iceConc_index
+    integer :: ibin, liqConc_index, iceConc_index, ice_type
     integer :: k, i, j
     !---------------------------------------------------------------------------
 
@@ -3805,10 +3830,10 @@ contains
     CM32M3 = 1000000.0_RP
 
     !$omp parallel do collapse(2) default(none) &
-    !$omp private(i,j,k,ibin) &
-    !$omp shared(JS,JE,IS,IE,KS,KE, &
+    !$omp private(i,j,k,ibin,ice_type) &
+    !$omp shared(JS,JE,IS,IE,KS,KE,I_QI,I_HC,I_HR,I_HI,I_HS,I_HG, &
     !$omp        split_bins,nbr,nbi,liqConc_index,iceConc_index,numberPPVL,numberPPVI, &
-    !$omp        CM32M3, &
+    !$omp        rim_index,agg_index,cry_index,CM32M3, &
     !$omp        Ne,QTRC0,DENS0)
     do j = JS, JE
     do i = IS, IE
@@ -3826,7 +3851,30 @@ contains
        ! --- ice spectrum
        ! pristine ice, aggregate, rimed
        do ibin = 1, nbi
-          Ne(k,i,j,I_HS) = Ne(k,i,j,I_HS) + QTRC0(k,i,j,iceConc_index+(ibin-1)*numberPPVI)*CM32M3 * DENS0(k,i,j)
+          call determine_ice_type(                       &
+             ice_type,                                   &
+             QTRC0(k,i,j,rim_index+(ibin-1)*numberPPVI), &
+             QTRC0(k,i,j,agg_index+(ibin-1)*numberPPVI), &
+             QTRC0(k,i,j,cry_index+(ibin-1)*numberPPVI), &
+             QTRC0(k,i,j,I_QI+ibin-2)                    )
+          select case(ice_type)
+          case(1)
+             ! pristine crytals
+             Ne(k,i,j,I_HI) = Ne(k,i,j,I_HI) + QTRC0(k,i,j,iceConc_index+(ibin-1)*numberPPVI)*CM32M3 * DENS0(k,i,j)
+          case(2)
+             ! aggregate
+             Ne(k,i,j,I_HS) = Ne(k,i,j,I_HS) + QTRC0(k,i,j,iceConc_index+(ibin-1)*numberPPVI)*CM32M3 * DENS0(k,i,j)
+          case(3)
+             ! rimed crystals
+             Ne(k,i,j,I_HS) = Ne(k,i,j,I_HS) + QTRC0(k,i,j,iceConc_index+(ibin-1)*numberPPVI)*CM32M3 * DENS0(k,i,j)
+          case(4)
+             ! rimed aggregate
+             Ne(k,i,j,I_HS) = Ne(k,i,j,I_HS) + QTRC0(k,i,j,iceConc_index+(ibin-1)*numberPPVI)*CM32M3 * DENS0(k,i,j)
+          case(5)
+             ! graupel
+             Ne(k,i,j,I_HG) = Ne(k,i,j,I_HG) + QTRC0(k,i,j,iceConc_index+(ibin-1)*numberPPVI)*CM32M3 * DENS0(k,i,j)
+          end select
+         !  Ne(k,i,j,I_HS) = Ne(k,i,j,I_HS) + QTRC0(k,i,j,iceConc_index+(ibin-1)*numberPPVI)*CM32M3 * DENS0(k,i,j)
        enddo
     enddo
     enddo
@@ -4167,5 +4215,60 @@ contains
     return
 
     end subroutine ATMOS_PHY_MP_amps_init_qtrc_BOX
+    !-----------------------------------------------------------------------------
+
+
+    !-----------------------------------------------------------------------------
+    subroutine determine_ice_type( &
+      ice_type,                    &
+      riming_ratio,                &
+      aggregate_ratio,             &
+      crystal_ratio,               &
+      total_ice,                   )
+
+      implicit none
+
+      integer, intent(out) :: ice_type
+      real(RP), intent(in) :: riming_ratio
+      real(RP), intent(in) :: aggregate_ratio
+      real(RP), intent(in) :: crystal_ratio
+      real(RP), intent(in) :: total_ice
+      
+      ! first, we decide the type of snow
+      ! if rimed mass is greater than 10% of total mass
+      if ( riming_ratio > 0.1_RP*total_ice ) then
+         ! if 10% of total mass is greater than aggregate mass
+         if ( 0.1_RP*total_ice > aggregate_ratio ) then
+            ! pristine crystal
+            ice_type = 1
+         else
+            ! aggregate
+            ice_type = 2
+         endif
+      else
+         ! if 10% of total mass is greater than aggregate mass
+         if ( 0.1_RP*total_ice > aggregate_ratio ) then
+            ! if crystal mass is greater than rimed mass
+            if ( crystal_ratio > riming_ratio ) then
+               ! rimed crystal
+               ice_type = 3
+            else
+               ! graupel
+               ice_type = 5
+            endif
+         else
+            ! if rimed mass is greater than aggregate mass
+            if ( riming_ratio > aggregate_ratio ) then
+               ! graupel
+               ice_type = 5
+            else
+               ! rimed aggregate
+               ice_type = 4
+            endif
+         endif
+      endif
+
+   end subroutine determine_ice_type
+
 
 end module scale_atmos_phy_mp_amps
