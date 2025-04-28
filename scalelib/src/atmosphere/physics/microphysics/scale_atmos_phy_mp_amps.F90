@@ -3150,9 +3150,9 @@ contains
        !$omp         rho_a,rho_c,rho_vol,rho_nex,ice_type,alpha,kp,temp1,temp2, &
        !$omp         vcs,micore,semi_a,semi_c,vim,vspace,kcsw,vcsw,Rmax,factor) &
        !$omp shared(JS,JE,IS,IE,KS,KE,nbi,ibin_is,ibin_sg,ibin_gh, &
-       !$omp        I_HI,I_HS,I_HG,I_QI,I_QW,rim_index,agg_index,cry_index,iceConc_index,a_index,c_index, &
+       !$omp        I_QI,I_QW,rim_index,agg_index,cry_index,iceConc_index,a_index,c_index, &
        !$omp        vol_index,nexice_index,numberPPVI, &
-       !$omp        l_gaxis_version,RILMTB,oneThirdFactor, &
+       !$omp        l_gaxis_version, &
        !$omp        Re,QTRC0,DENS0)
        do j = JS, JE
        do i = IS, IE
@@ -3648,7 +3648,6 @@ contains
                    exit
                 endif
              enddo ! ibin
-             LOG_INFO("debugging: ",'(4I5, 4ES15.6)') k, i, j, bin_check, Qe(k,i,j,I_HC), QNUM(k,i,j,I_HC)/CM32M3, dropletMass, local_binbr(1)
           endif
 
           if ( bin_check == 0 ) then
@@ -3723,7 +3722,7 @@ contains
     cry_index    = I_QPPVI + 2 - 1 ! crystal mass index
     !$omp parallel do collapse(2) default(none) &
     !$omp private(i,j,k,ibin,ice_type) &
-    !$omp shared(JS,JE,IS,IE,KS,KE,I_HC,I_HR,I_HI,I_HS,I_HG, &
+    !$omp shared(JS,JE,IS,IE,KS,KE, &
     !$omp        split_bins,nbr,nbi,ibin_is,ibin_sg,ibin_gh,I_QI,I_QW, &
     !$omp        rim_index,agg_index,cry_index,numberPPVI, &
     !$omp        Qe,QTRC0)
@@ -3837,7 +3836,7 @@ contains
 
     !$omp parallel do collapse(2) default(none) &
     !$omp private(i,j,k,ibin,ice_type) &
-    !$omp shared(JS,JE,IS,IE,KS,KE,I_QI,I_HC,I_HR,I_HI,I_HS,I_HG, &
+    !$omp shared(JS,JE,IS,IE,KS,KE,I_QI, &
     !$omp        split_bins,nbr,nbi,liqConc_index,iceConc_index,numberPPVL,numberPPVI, &
     !$omp        rim_index,agg_index,cry_index,CM32M3, &
     !$omp        Ne,QTRC0,DENS0)
