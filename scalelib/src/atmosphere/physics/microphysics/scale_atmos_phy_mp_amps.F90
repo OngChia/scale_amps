@@ -3241,7 +3241,7 @@ contains
                    kp = log10(0.8_RP/alpha)
                    alpha = ((temp1/temp2)**kp)*0.8_RP
                 endif
-             endi 
+             endif 
              !                                                            unit:
              vcs = rho_vol / rho_con                                    ! cm3
              temp1 = QTRC0(k,i,j,I_QW+iq-2) * DENS0(k,i,j) / &          ! kg/m3
@@ -3709,7 +3709,7 @@ contains
     real(RP), intent(in)  :: QTRC0(KA,IA,JA,QA-1)      ! tracer mass concentration [kg/kg]
     real(RP), intent(out) :: Qe   (KA,IA,JA,N_HYD)     ! mixing ratio of each cateory [kg/kg]
 
-    integer :: ibin, ice_type
+    integer :: ibin, rim_index, agg_index, cry_index, ice_type
     integer :: k, i, j
     !---------------------------------------------------------------------------
 
@@ -3718,6 +3718,9 @@ contains
     Qe(:,:,:,:) = 0.0_RP
     !$omp end workshare
 
+    rim_index    = I_QPPVI     - 1 ! rimed mass index
+    agg_index    = I_QPPVI + 1 - 1 ! aggregate mass index
+    cry_index    = I_QPPVI + 2 - 1 ! crystal mass index
     !$omp parallel do collapse(2) default(none) &
     !$omp private(i,j,k,ibin,ice_type) &
     !$omp shared(JS,JE,IS,IE,KS,KE,I_HC,I_HR,I_HI,I_HS,I_HG, &
@@ -3817,13 +3820,16 @@ contains
     real(RP), intent(out) :: Ne   (KA,IA,JA,N_HYD)     ! number concentration of each cateory [1/m3]
 
     real(RP) :: CM32M3
-    integer :: ibin, liqConc_index, iceConc_index, ice_type
+    integer :: ibin, rim_index, agg_index, cry_index, liqConc_index, iceConc_index, ice_type
     integer :: k, i, j
     !---------------------------------------------------------------------------
 
 !OCL XFILL
     Ne(:,:,:,:) = 0.0_RP
 
+    rim_index    = I_QPPVI     - 1 ! rimed mass index
+    agg_index    = I_QPPVI + 1 - 1 ! aggregate mass index
+    cry_index    = I_QPPVI + 2 - 1 ! crystal mass index
     liqConc_index = I_QPPVL + 2 - 1
     iceConc_index = I_QPPVI + 6 - 1
 
@@ -4224,7 +4230,7 @@ contains
       riming_ratio,                &
       aggregate_ratio,             &
       crystal_ratio,               &
-      total_ice,                   )
+      total_ice                    )
 
       implicit none
 
