@@ -76,7 +76,7 @@ module mod_mkinit_common
   public :: MKINIT_common_urban_setup
 
   public :: MKINIT_common_read_sounding
-  public :: MKINIT_common_read_sounding_mpace
+  public :: MKINIT_common_read_sounding_amps
 
   !-----------------------------------------------------------------------------
   !
@@ -922,8 +922,8 @@ contains
     return
   end subroutine MKINIT_common_read_sounding
 
-  !> Read sounding data from file specialized for MPACE project
-  subroutine MKINIT_common_read_sounding_mpace( &
+  !> Read sounding data from file specialized for AMPS project
+  subroutine MKINIT_common_read_sounding_amps( &
        DENS, VELX, VELY, POTT, QV, QCI, QNCI )
     use scale_const, only: &
        Rvap  => CONST_Rvap, &
@@ -1008,15 +1008,15 @@ contains
     read(IO_FID_CONF,nml=PARAM_MKINIT_SOUNDING,iostat=ierr)
 
     if( ierr < 0 ) then !--- missing
-       LOG_INFO("read_sounding_mpace",*) 'Not found namelist. Default used.'
+       LOG_INFO("read_sounding_amps",*) 'Not found namelist. Default used.'
     elseif( ierr > 0 ) then !--- fatal error
-       LOG_ERROR("read_sounding_mpace",*) 'Not appropriate names in namelist PARAM_MKINIT_SOUNDING. Check!'
+       LOG_ERROR("read_sounding_amps",*) 'Not appropriate names in namelist PARAM_MKINIT_SOUNDING. Check!'
        call PRC_abort
     endif
     LOG_NML(PARAM_MKINIT_SOUNDING)
 
     !--- prepare sounding profile
-    LOG_INFO("read_sounding_mpace",*) 'Input sounding file:', trim(ENV_IN_SOUNDING_file)
+    LOG_INFO("read_sounding_amps",*) 'Input sounding file:', trim(ENV_IN_SOUNDING_file)
     fid = IO_get_available_fid()
     open( fid,                                 &
           file   = trim(ENV_IN_SOUNDING_file), &
@@ -1025,19 +1025,19 @@ contains
           iostat = ierr                        )
 
     if ( ierr /= 0 ) then
-       LOG_ERROR("read_sounding_mpace",*) '[mod_mkinit/read_sounding] Input file not found!'
+       LOG_ERROR("read_sounding_amps",*) '[mod_mkinit/read_sounding] Input file not found!'
     endif
 
 
     !--- read sounding file till end
     read(fid,*) SFC_PRES, SFC_TEMP, SFC_THETA, SFC_THETAL, SFC_QV, SFC_QCI, SFC_QNCI
 
-    LOG_INFO("read_sounding_mpace",*) '+ Surface pressure [hPa]',                         SFC_PRES
-    LOG_INFO("read_sounding_mpace",*) '+ Surface temperature [K]',                        SFC_TEMP
-    LOG_INFO("read_sounding_mpace",*) '+ Surface pot. temp  [K]',                         SFC_THETA
-    LOG_INFO("read_sounding_mpace",*) '+ Surface water vapor [g/kg]',                     SFC_QV
-    LOG_INFO("read_sounding_mpace",*) '+ Surface liquid and ice [g/kg]',                  SFC_QCI
-    LOG_INFO("read_sounding_mpace",*) '+ Surface liquid and ice conc. [/cm3]',            SFC_QNCI
+    LOG_INFO("read_sounding_amps",*) '+ Surface pressure [hPa]',                         SFC_PRES
+    LOG_INFO("read_sounding_amps",*) '+ Surface temperature [K]',                        SFC_TEMP
+    LOG_INFO("read_sounding_amps",*) '+ Surface pot. temp  [K]',                         SFC_THETA
+    LOG_INFO("read_sounding_amps",*) '+ Surface water vapor [g/kg]',                     SFC_QV
+    LOG_INFO("read_sounding_amps",*) '+ Surface liquid and ice [g/kg]',                  SFC_QCI
+    LOG_INFO("read_sounding_amps",*) '+ Surface liquid and ice conc. [/cm3]',            SFC_QNCI
 
     do k = 2, EXP_klim
        read(fid,*,iostat=ierr) EXP_z(k), EXP_pres(k), EXP_temp(k), EXP_pott(k), EXP_potl(k), EXP_qv(k), EXP_u(k), EXP_v(k), EXP_qci(k), EXP_qnci(k)
@@ -1116,10 +1116,10 @@ contains
        enddo
     enddo
 
-    LOG_INFO("read_sounding_mpace",*) 'Checking initial condition before'
-    LOG_INFO("read_sounding_mpace",*) 'Z          D          T          A          P          O          L          V          C'
+    LOG_INFO("read_sounding_amps",*) 'Checking initial condition before'
+    LOG_INFO("read_sounding_amps",*) 'Z          D          T          A          P          O          L          V          C'
     do k = KS, KE
-       LOG_INFO("read_sounding_mpace",'(9ES15.6)') CZ(k), DENS(k), TEMP(k), TEMP_OLD(k), PRES(k), POTT(k),  POTL(k), QV(k), QCI(k)
+       LOG_INFO("read_sounding_amps",'(9ES15.6)') CZ(k), DENS(k), TEMP(k), TEMP_OLD(k), PRES(k), POTT(k),  POTL(k), QV(k), QCI(k)
     enddo
 
     if ( ATMOS_HYDROMETEOR_dry ) QV(:) = 0.0_RP
@@ -1215,13 +1215,13 @@ contains
        enddo
     endif
 
-    LOG_INFO("read_sounding_mpace",*) 'Checking initial condition after'
-    LOG_INFO("read_sounding_mpace",*) 'Z          D          T          A          P          O          L          V          C'
+    LOG_INFO("read_sounding_amps",*) 'Checking initial condition after'
+    LOG_INFO("read_sounding_amps",*) 'Z          D          T          A          P          O          L          V          C'
     do k = KS, KE
-       LOG_INFO("read_sounding_mpace",'(9ES15.6)') CZ(k), DENS(k), TEMP(k), TEMP_OLD(k), PRES(k), POTT(k),  POTL(k), QV(k), QCI(k)
+       LOG_INFO("read_sounding_amps",'(9ES15.6)') CZ(k), DENS(k), TEMP(k), TEMP_OLD(k), PRES(k), POTT(k),  POTL(k), QV(k), QCI(k)
     enddo
 
     return
-  end subroutine MKINIT_common_read_sounding_mpace
+  end subroutine MKINIT_common_read_sounding_amps
 
 end module mod_mkinit_common

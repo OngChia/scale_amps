@@ -91,7 +91,7 @@ module mod_mkinit
      MKINIT_common_ocean_setup, &
      MKINIT_common_urban_setup, &
      MKINIT_common_read_sounding,       &
-     MKINIT_common_read_sounding_mpace, &
+     MKINIT_common_read_sounding_amps, &
      THETAstd
    
   !-----------------------------------------------------------------------------
@@ -153,7 +153,7 @@ module mod_mkinit
   integer, public, parameter :: I_BAROCWAVE        = 30
   integer, public, parameter :: I_BOMEX            = 31
 
-  integer, public, parameter :: I_MPACE            = 32
+  integer, public, parameter :: I_AMPS            = 32
   integer, public, parameter :: I_BOXAMPS          = 33
 
   integer, public, parameter :: I_SONDE_PERTURB    = 34
@@ -200,7 +200,7 @@ module mod_mkinit
   private :: MKINIT_boxaero
   private :: MKINIT_warmbubbleaero
 
-  private :: MKINIT_MPACE
+  private :: MKINIT_AMPS
   private :: MKINIT_boxamps
 
   !-----------------------------------------------------------------------------
@@ -375,8 +375,8 @@ contains
        MKINIT_TYPE = I_CAVITYFLOW
     case('BAROCWAVE')
        MKINIT_TYPE = I_BAROCWAVE
-    case('MPACE')
-       MKINIT_TYPE = I_MPACE
+    case('AMPS')
+       MKINIT_TYPE = I_AMPS
     case('BOXAMPS')
        MKINIT_TYPE = I_BOXAMPS
     case('SONDE_PERTURB')
@@ -606,8 +606,8 @@ contains
          call MKINIT_cavityflow
       case(I_BAROCWAVE)
          call MKINIT_barocwave
-      case(I_MPACE)
-         call MKINIT_MPACE
+      case(I_AMPS)
+         call MKINIT_AMPS
       case(I_BOXAMPS)
          call MKINIT_boxamps
          convert_qtrc = .false.
@@ -986,8 +986,8 @@ contains
   end subroutine tke_setup
 
   !-----------------------------------------------------------------------------
-  !> Make initial state for MPACE experiment
-  subroutine MKINIT_MPACE
+  !> Make initial state for AMPS experiment
+  subroutine MKINIT_AMPS
     use scale_atmos_hydrometeor, only: &
        ATMOS_HYDROMETEOR_dry
     use scale_atmos_hydrometeor, only: &
@@ -1012,43 +1012,43 @@ contains
     
     real(RP) :: bubbles(KA,IA,JA), temp
 
-    integer  :: MPACE_fluctuationNumberLayers = 10
-    real(RP) :: MPACE_fluctuation = 0.5D0
-    namelist / PARAM_MKINIT_MPACE / &
-       MPACE_fluctuation, &
-       MPACE_fluctuationNumberLayers
+    integer  :: AMPS_fluctuationNumberLayers = 10
+    real(RP) :: AMPS_fluctuation = 0.5D0
+    namelist / PARAM_MKINIT_AMPS / &
+       AMPS_fluctuation, &
+       AMPS_fluctuationNumberLayers
 
     integer :: ierr
     integer :: k, i, j
     !---------------------------------------------------------------------------
 
     LOG_NEWLINE
-    LOG_INFO("MKINIT_MPACE",*) 'Setup initial state'
+    LOG_INFO("MKINIT_AMPS",*) 'Setup initial state'
 
     if ( ATMOS_HYDROMETEOR_dry ) then
-       LOG_ERROR("MKINIT_MPACE",*) 'QV is not registered'
+       LOG_ERROR("MKINIT_AMPS",*) 'QV is not registered'
        call PRC_abort
     end if
 
     !--- read namelist
     rewind(IO_FID_CONF)
-    read(IO_FID_CONF,nml=PARAM_MKINIT_MPACE,iostat=ierr)
+    read(IO_FID_CONF,nml=PARAM_MKINIT_AMPS,iostat=ierr)
 
     if( ierr < 0 ) then !--- missing
-       LOG_INFO("MKINIT_MPACE",*) 'Not found namelist. Default used.'
+       LOG_INFO("MKINIT_AMPS",*) 'Not found namelist. Default used.'
     elseif( ierr > 0 ) then !--- fatal error
-       LOG_ERROR("MKINIT_MPACE",*) 'Not appropriate names in namelist PARAM_MKINIT_MPACE. Check!'
+       LOG_ERROR("MKINIT_AMPS",*) 'Not appropriate names in namelist PARAM_MKINIT_AMPS. Check!'
        call PRC_abort
     endif
-    LOG_NML(PARAM_MKINIT_MPACE)
+    LOG_NML(PARAM_MKINIT_AMPS)
 
-    call MKINIT_common_read_sounding_mpace( RHO, VELX, VELY, POTT, QV1D, QCI1D, QNUM1D ) ! (out)
+    call MKINIT_common_read_sounding_amps( RHO, VELX, VELY, POTT, QV1D, QCI1D, QNUM1D ) ! (out)
 
     ! initiate small fluctuation in potential temperature
     do i = ISB, IEB
-    do k = KS, KS+MPACE_fluctuationNumberLayers-1
+    do k = KS, KS+AMPS_fluctuationNumberLayers-1
        call random_number(temp)
-       bubbles(k,i,JSB) = MPACE_fluctuation * temp
+       bubbles(k,i,JSB) = AMPS_fluctuation * temp
     enddo
     enddo
     do j = JSB+1, JEB
@@ -1087,7 +1087,7 @@ contains
     call MKINIT_common_flux_setup
 
     return
-  end subroutine MKINIT_MPACE
+  end subroutine MKINIT_AMPS
 
   !-----------------------------------------------------------------------------
   !> Make initial state of Box model experiment for collision-coalescence in AMPS

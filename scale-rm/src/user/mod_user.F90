@@ -50,17 +50,17 @@ module mod_user
   character(len=H_SHORT) :: USER_experiment
 
   ! *********************************************************************
-  ! -- these are defined for SHEBA and MPACE run
+  ! -- these are defined for AMPS idealized runs
   ! *********************************************************************
-  logical :: SHEBA_SWITCH_ACCE = .false.
-  logical :: SHEBA_SWITCH_MOMZ = .false.
-  logical :: SHEBA_SWITCH_RHOU = .false.
-  logical :: SHEBA_SWITCH_RHOV = .false.
-  logical :: SHEBA_SWITCH_DENS = .false.
-  logical :: SHEBA_SWITCH_QVAP = .false.
-  logical :: SHEBA_SWITCH_RHOT = .false.
-  logical :: SHEBA_SWITCH_TEMP = .false.
-  logical :: SHEBA_SWITCH_RHOQ = .false.
+  logical :: SWITCH_VERTICAL_ACCE_TYPE = .false.
+  logical :: SWITCH_MOMZ = .false.
+  logical :: SWITCH_RHOU = .false.
+  logical :: SWITCH_RHOV = .false.
+  logical :: SWITCH_DENS = .false.
+  logical :: SWITCH_QVAP_ONLY = .false.
+  logical :: SWITCH_RHOT = .false.
+  logical :: SWITCH_TEMP = .false.
+  logical :: SWITCH_RHOQ = .false.
 
   real(RP), allocatable :: largeScaleTTendency(:) ! large-scale temperature forcing
   real(RP), allocatable :: largeScaleQTendency(:) ! large-scale vapor forcing
@@ -142,15 +142,15 @@ contains
        USER_file, &
        USER_const, &
        USER_experiment, &
-       SHEBA_SWITCH_ACCE, &
-       SHEBA_SWITCH_MOMZ, &
-       SHEBA_SWITCH_RHOU, &
-       SHEBA_SWITCH_RHOV, &
-       SHEBA_SWITCH_DENS, &
-       SHEBA_SWITCH_QVAP, &
-       SHEBA_SWITCH_RHOT, &
-       SHEBA_SWITCH_TEMP, &
-       SHEBA_SWITCH_RHOQ
+       SWITCH_ACCE, &
+       SWITCH_MOMZ, &
+       SWITCH_RHOU, &
+       SWITCH_RHOV, &
+       SWITCH_DENS, &
+       SWITCH_QVAP, &
+       SWITCH_RHOT, &
+       SWITCH_TEMP, &
+       SWITCH_RHOQ
 
     !---------------------------------------------------------------------------
 
@@ -201,7 +201,7 @@ contains
              iostat = ierr                        )
 
        if ( ierr /= 0 ) then
-          LOG_ERROR("read_largescale_sheba",*) '[user_setup/read_largescale] Input file not found!'
+          LOG_ERROR("read_largescale_amps",*) '[user_setup/read_largescale] Input file not found!'
           call PRC_abort
        endif
 
@@ -328,113 +328,14 @@ contains
     real(RP) :: QHYD(KA,IA,JA,N_HYD)
     real(RP) :: QNUM(KA,IA,JA,N_HYD)
 
-    real(RP) :: bubbles(KA,JA), temp
-
-    integer  :: SHEBA_fluctuationNumberLayers = 10
-    real(RP) :: SHEBA_fluctuation = 0.5D0
-    namelist / PARAM_USER_MKINIT / &
-       SHEBA_fluctuation, &
-       SHEBA_fluctuationNumberLayers
-
     integer :: ierr
     integer :: k, i, j
     !---------------------------------------------------------------------------
 
     LOG_NEWLINE
-    LOG_INFO("MKINIT_SHEBA",*) 'Setup initial state'
+    LOG_INFO("MKINIT_CLOUDLAB",*) 'Nothing to be done. Continue...'
 
-    if ( ATMOS_HYDROMETEOR_dry ) then
-       LOG_ERROR("MKINIT_SHEBA",*) 'QV is not registered'
-       call PRC_abort
-    end if
-
-    !--- read namelist
-    rewind(IO_FID_CONF)
-    read(IO_FID_CONF,nml=PARAM_USER_MKINIT,iostat=ierr)
-
-    if( ierr < 0 ) then !--- missing
-       LOG_INFO("MKINIT_SHEBA",*) 'Not found namelist. Default used.'
-    elseif( ierr > 0 ) then !--- fatal error
-       LOG_ERROR("MKINIT_SHEBA",*) 'Not appropriate names in namelist PARAM_MKINIT_SHEBA. Check!'
-       call PRC_abort
-    endif
-    LOG_NML(PARAM_USER_MKINIT)
-
-    call read_sounding_sheba( RHO, VELX, VELY, POTT, QV1D, QCI1D, QNUM1D ) ! (out)
-
-    !$acc data copyin(RHO,VELX,VELY,POTT,QV1D,QCI1D,QNUM1D) &
-    !$acc      copyout(DENS,MOMZ,MOMX,MOMY,RHOT,QTRC(:,:,:,QS_MP:QE_MP)) &
-    !$acc      create(bubbles,QHYD,QNUM)
-
-    ! initiate small fluctuation in potential temperature
-    !$omp parallel do private(temp)
-    !$acc kernels
-    do j = JSB, JEB
-    do k = KS, KS+SHEBA_fluctuationNumberLayers-1
-       call random_number(temp)
-       bubbles(k,j) = SHEBA_fluctuation * temp
-    enddo
-    enddo
-    !$acc end kernels
-    !$omp parallel do
-    !$acc kernels
-    do j = JSB, JEB
-    do k = KS+SHEBA_fluctuationNumberLayers, KE
-       bubbles(k,j) = 0.0_RP
-    enddo
-    enddo
-    !$acc end kernels
-
-    !$omp workshare
-    !$acc kernels
-    QHYD(:,:,:,:) = 0.0_RP
-    QNUM(:,:,:,:) = 0.0_RP
-    !$acc end kernels
-    !$omp end workshare
-
-
-    !$omp parallel do
-    !$acc kernels
-    do j = JSB, JEB
-    do i = ISB, IEB
-    do k = KS, KE
-       DENS(k,i,j) = RHO(k)
-       MOMZ(k,i,j) = RHO(k) * bubbles(k,j)
-       ! rotated 90 deg
-       MOMX(k,i,j) = RHO(k) * (-VELY(k))
-       MOMY(k,i,j) = RHO(k) *   VELX(k)
-
-       RHOT(k,i,j) = RHO(k) * ( POTT(k) )
-
-       qv  (k,i,j) = QV1D(k)
-
-       QHYD(k,i,j,I_HC) = QCI1D(k) ! only the smallest (bin) cloud ice are initialized
-       if (QNUM1D(k) /= 0.0_RP) then
-          QNUM(k,i,j,I_HC) = QNUM1D(k)*1000000.0_RP
-       else
-          ! number concentration (cm-3->m-3) of smallest droplets
-          ! assuming that each droplet mass is 1 x 10^-14 g (smallest bin)
-          QNUM(k,i,j,I_HC) = QCI1D(k)*RHO(k)/1.E-17_RP*1.E-6_RP *1000000.0_RP
-       endif
-    enddo
-    enddo
-    enddo
-    !$acc end kernels
-
-    call ATMOS_PHY_MP_driver_qhyd2qtrc( KA, KS, KE, IA, IS, IE, JA, JS, JE, &
-                                        qv(:,:,:), QHYD(:,:,:,:), & ! [IN]
-                                        DENS(:,:,:),              & ! [IN]
-                                        QTRC(:,:,:,QS_MP:QE_MP),  & ! [OUT]
-                                        QNUM=QNUM(:,:,:,:)        ) ! [IN]
-
-
-    LOG_INFO("DEBUG: ", *) "below is debugging message"
-    do k = KS, KE
-       LOG_INFO("debugging vertical profile: ",'(I5, 6ES15.6)') k, MAXVAL(QTRC(k,:,:,QS_MP+1)), MAXVAL(QHYD(k,:,:,I_HC)), MAXVAL(QNUM(k,:,:,I_HC)), MINVAL(QTRC(k,:,:,QS_MP+1)), MINVAL(QHYD(k,:,:,I_HC)), MINVAL(QNUM(k,:,:,I_HC))
-    enddo
-
-    !$acc end data
-
+    
     return
   end subroutine USER_mkinit
 
@@ -563,220 +464,77 @@ contains
           QTRC_column(KS-1,iq) = QTRC_column(KS,iq)
        enddo
 
-       if ( trim(USER_experiment) == 'SHEBA' ) then
-
-          ! compute large-scale forcing
-          do k = KS, KE
-
-             ! large-scale cooling forcing
-             TEMP_t_USER(k,i,j) = TEMP_t_USER(k,i,j) + largeScaleTTendency(k) * RHOT(k,i,j) / TEMP(k,i,j)
-
-             ! large-scale vapor forcing
-             RHOQ_t_USER(k,i,j,QS_MP) = RHOQ_t_USER(k,i,j,QS_MP) + largeScaleQTendency(k) * DENS(k,i,j)
-
-             ! large-scale vapor forcing
-             DENS_t_USER(k,i,j) = DENS_t_USER(k,i,j) + largeScaleQTendency(k) * DENS(k,i,j)
-
-             ! large-scale sinking forcing, the simple first-order upwind advection scheme is used
-             if ( PRES(k,i,j) >= 95700.0_RP ) then
-                SINK_CEN = -(-0.000008233_RP*PRES(k,i,j) + 0.8379_RP) / &
-                                 (CONST_GRAV*DENS(k,i,j))
-             else if ( PRES(k,i,j) >= 60000.0_RP ) then
-                SINK_CEN = (-0.05_RP) / (CONST_GRAV*DENS(k,i,j))
-             else
-                SINK_CEN = 0.0_RP
-             endif
-             if ( k == KE ) then
-                if ( PRES(k-1,i,j) >= 95700.0_RP ) then
-                   SINK_UP = -(-0.000008233_RP*PRES(k-1,i,j) + 0.8379_RP) / &
-                                   (CONST_GRAV*DENS(k-1,i,j))
-                else if ( PRES(k-1,i,j) >= 60000.0_RP ) then
-                   SINK_UP = (-0.05_RP) / (CONST_GRAV*DENS(k-1,i,j))
-                else
-                   SINK_UP = 0.0_RP
-                endif
-                SINK_UP = 2.0_RP*SINK_CEN - SINK_UP
-             else
-                if ( PRES(k+1,i,j) >= 95700.0_RP ) then
-                   SINK_UP = -(-0.000008233_RP*PRES(k+1,i,j) + 0.8379_RP) / &
-                                   (CONST_GRAV*DENS(k+1,i,j))
-                else if ( PRES(k+1,i,j) >= 60000.0_RP ) then
-                   SINK_UP = (-0.05_RP) / (CONST_GRAV*DENS(k+1,i,j))
-                else
-                   SINK_UP = 0.0_RP
-                endif
-             endif
-             if ( k == KS ) then
-                SINK_DUP = -SINK_CEN
-             else
-                if ( PRES(k-1,i,j) >= 95700.0_RP ) then
-                   SINK_DUP = -(-0.000008233_RP*PRES(k-1,i,j) + 0.8379_RP) / &
-                                   (CONST_GRAV*DENS(k-1,i,j))
-                else if ( PRES(k-1,i,j) >= 60000.0_RP ) then
-                   SINK_DUP = (-0.05_RP) / (CONST_GRAV*DENS(k-1,i,j))
-                else
-                   SINK_DUP = 0.0_RP
-                endif
-             endif
-
-             subsidence_sink(k,i,j) = SINK_CEN
-
-             ! -- x momentum --
-             RHOU_t_USER(k,i,j) = RHOU_t_USER(k,i,j) - &
-                                  0.5_RP*(SINK_UP + SINK_CEN)* &
-                                  !0.5_RP*(DENS_column(k+1)*SINK_UP + &
-                                  !        DENS_column(k  )*SINK_CEN)* &
-                                  (U_column(k+1) - U_column(k))*RFDZ(k)
-
-             ! -- y momentum --
-             RHOV_t_USER(k,i,j) = RHOV_t_USER(k,i,j) - &
-                                  0.5_RP*(SINK_UP + SINK_CEN)* &
-                                  !0.5_RP*(DENS_column(k+1)*SINK_UP + &
-                                  !        DENS_column(k  )*SINK_CEN)* &
-                                  (V_column(k+1) - V_column(k))*RFDZ(k)
-
-             ! -- mixing ratio --
-             if ( SHEBA_SWITCH_QVAP ) then
-                iq = QS_MP
+       ! compute large-scale forcing
+       do k = KS, KE
+ 
+          ! large-scale cooling forcing
+          TEMP_t_USER(k,i,j) = TEMP_t_USER(k,i,j) + largeScaleTTendency(k) &
+                                                 * DENS(k,i,j) * POTT(k,i,j) / TEMP(k,i,j)
+ 
+          ! large-scale vapor forcing
+          RHOQ_t_USER(k,i,j,QS_MP) = RHOQ_t_USER(k,i,j,QS_MP) + largeScaleQTendency(k) * DENS(k,i,j)
+ 
+          ! large-scale vapor forcing
+          DENS_t_USER(k,i,j) = DENS_t_USER(k,i,j) + largeScaleQTendency(k) * DENS(k,i,j)
+ 
+          SINK_CEN = WLS(k)
+          SINK_UP = WLS(k+1)
+          SINK_DUP = WLS(k-1)
+ 
+          subsidence_sink(k,i,j) = SINK_CEN
+ 
+          ! -- x momentum --
+          RHOU_t_USER(k,i,j) = RHOU_t_USER(k,i,j) &
+                            - 0.5_RP*(SINK_UP + SINK_CEN) &
+                            * (U_column(k+1) - U_column(k))*RFDZ(k)
+ 
+          ! -- y momentum --
+          RHOV_t_USER(k,i,j) = RHOV_t_USER(k,i,j) &
+                            - 0.5_RP*(SINK_UP + SINK_CEN) &
+                            * (V_column(k+1) - V_column(k))*RFDZ(k)
+ 
+          ! -- mixing ratio --
+          if ( SWITCH_QVAP_ONLY ) then
+             iq = QS_MP
+             RHOQ_t_USER(k,i,j,iq) = RHOQ_t_USER(k,i,j,iq) &
+                                  - 0.5_RP*(SINK_UP + SINK_CEN) &
+                                  * (QTRC_column(k+1,iq) - QTRC_column(k,iq))*RFDZ(k)
+          else
+             do iq = QS_MP, QE_MP
                 RHOQ_t_USER(k,i,j,iq) = RHOQ_t_USER(k,i,j,iq) &
-                                      - 0.5_RP*(SINK_UP + SINK_CEN) &
-                                      * (QTRC_column(k+1,iq) - QTRC_column(k,iq))*RFDZ(k)
-             else
-                do iq = QS_MP, QE_MP
-                   RHOQ_t_USER(k,i,j,iq) = RHOQ_t_USER(k,i,j,iq) &
-                                         - 0.5_RP*(SINK_UP + SINK_CEN) &
-                                         * (QTRC_column(k+1,iq) - QTRC_column(k,iq))*RFDZ(k)
-                enddo
-             endif
+                                     - 0.5_RP*(SINK_UP + SINK_CEN) &
+                                     * (QTRC_column(k+1,iq) - QTRC_column(k,iq))*RFDZ(k)
+             enddo
+          endif
+ 
+          ! -- energy --
+          RHOT_t_USER(k,i,j) = RHOT_t_USER(k,i,j) &
+                            - 0.5_RP*(SINK_UP + SINK_CEN) &
+                            * (POTT_column(k+1) - POTT_column(k))*RFDZ(k)
+ 
+       enddo
+ 
+       ! large-scale sinking forcing, the simple first-order upwind advection scheme is used
+       do k = KS, KE-1
+          SINK_CEN = WLS(k)
+          SINK_UP = WLS(k+1)
+          SINK_DUP = WLS(k+2)
+ 
+          ! -- z momentum --
+          if (SWITCH_VERTICAL_ACCE_TYPE) then
+             MOMZ_t_USER(k,i,j) = MOMZ_t_USER(k,i,j) &
+                               + 0.5_RP*(SINK_CEN + SINK_UP) &
+                               * 0.5_RP*(DENS_column(k) + DENS_column(k+1))
+          else
+             MOMZ_t_USER(k,i,j) = MOMZ_t_USER(k,i,j) &
+                               - SINK_UP &
+                               * ( MOMZ_column(k+1)*2.0_RP/( DENS_column(k+2) &
+                                                          + DENS_column(k+1)) &
+                                  -  MOMZ_column(k  )*2.0_RP/( DENS_column(k+1) &
+                                                             + DENS_column(k  )))*RCDZ(k+1)
+          endif
+       enddo
 
-             ! -- energy --
-             RHOT_t_USER(k,i,j) = RHOT_t_USER(k,i,j) - & ! DENS_column(k)* &
-                                  0.5_RP*(SINK_UP + SINK_CEN)* &
-                                  (POTT_column(k+1) - POTT_column(k))*RFDZ(k)
-
-          enddo
-
-          ! large-scale sinking forcing, the simple first-order upwind advection scheme is used
-          do k = KS, KE-1
-             if ( PRES(k,i,j) >= 95700.0_RP ) then
-                SINK_CEN = -(-0.000008233_RP*PRES(k,i,j) + 0.8379_RP) / &
-                                 (CONST_GRAV*DENS(k,i,j))
-             else if ( PRES(k,i,j) >= 60000.0_RP ) then
-                SINK_CEN = (-0.05_RP) / (CONST_GRAV*DENS(k,i,j))
-             else
-                SINK_CEN = 0.0_RP
-             endif
-             if ( PRES(k+1,i,j) >= 95700.0_RP ) then
-                SINK_UP = -(-0.000008233_RP*PRES(k+1,i,j) + 0.8379_RP) / &
-                                (CONST_GRAV*DENS(k+1,i,j))
-             else if ( PRES(k+1,i,j) >= 60000.0_RP ) then
-                SINK_UP = (-0.05_RP) / (CONST_GRAV*DENS(k+1,i,j))
-             else
-                SINK_UP = 0.0_RP
-             endif
-             if ( k == KE-1 ) then
-                SINK_DUP = 2.0_RP*SINK_UP - SINK_CEN
-             else
-                if ( PRES(k+2,i,j) >= 95700.0_RP ) then
-                   SINK_DUP = -(-0.000008233_RP*PRES(k+2,i,j) + 0.8379_RP) / &
-                                    (CONST_GRAV*DENS(k+2,i,j))
-                else if ( PRES(k+2,i,j) >= 60000.0_RP ) then
-                   SINK_DUP = (-0.05_RP) / (CONST_GRAV*DENS(k+2,i,j))
-                else
-                   SINK_DUP = 0.0_RP
-                endif
-             endif
-
-             ! -- z momentum --
-             if (SHEBA_SWITCH_ACCE) then
-                MOMZ_t_USER(k,i,j) = MOMZ_t_USER(k,i,j) &
-                                   + 0.5_RP*(SINK_CEN + SINK_UP) &
-                                   * 0.5_RP*(DENS_column(k) + DENS_column(k+1))
-             else
-                MOMZ_t_USER(k,i,j) = MOMZ_t_USER(k,i,j) &
-                                   - SINK_UP &
-                                   !* DENS_column(k+1)*SINK_UP &
-                                   * ( MOMZ_column(k+1)*2.0_RP/( DENS_column(k+2) &
-                                                             + DENS_column(k+1)) &
-                                     - MOMZ_column(k  )*2.0_RP/( DENS_column(k+1) &
-                                                               + DENS_column(k)))*RCDZ(k+1)
-             endif
-          enddo
-
-       else if ( trim(USER_experiment) == 'MPACE' .or. trim(USER_experiment) == 'ISDAC' ) then
-
-          ! compute large-scale forcing
-          do k = KS, KE
-
-             ! large-scale cooling forcing
-             TEMP_t_USER(k,i,j) = TEMP_t_USER(k,i,j) + largeScaleTTendency(k) &
-                                                     * DENS(k,i,j) * POTT(k,i,j) / TEMP(k,i,j)
-
-             ! large-scale vapor forcing
-             RHOQ_t_USER(k,i,j,QS_MP) = RHOQ_t_USER(k,i,j,QS_MP) + largeScaleQTendency(k) * DENS(k,i,j)
-
-             ! large-scale vapor forcing
-             DENS_t_USER(k,i,j) = DENS_t_USER(k,i,j) + largeScaleQTendency(k) * DENS(k,i,j)
-
-             SINK_CEN = WLS(k)
-             SINK_UP = WLS(k+1)
-             SINK_DUP = WLS(k-1)
-
-             subsidence_sink(k,i,j) = SINK_CEN
-
-             ! -- x momentum --
-             RHOU_t_USER(k,i,j) = RHOU_t_USER(k,i,j) &
-                                - 0.5_RP*(SINK_UP + SINK_CEN) &
-                                * (U_column(k+1) - U_column(k))*RFDZ(k)
-
-             ! -- y momentum --
-             RHOV_t_USER(k,i,j) = RHOV_t_USER(k,i,j) &
-                                - 0.5_RP*(SINK_UP + SINK_CEN) &
-                                * (V_column(k+1) - V_column(k))*RFDZ(k)
-
-             ! -- mixing ratio --
-             if ( SHEBA_SWITCH_QVAP ) then
-                iq = QS_MP
-                RHOQ_t_USER(k,i,j,iq) = RHOQ_t_USER(k,i,j,iq) &
-                                      - 0.5_RP*(SINK_UP + SINK_CEN) &
-                                      * (QTRC_column(k+1,iq) - QTRC_column(k,iq))*RFDZ(k)
-             else
-                do iq = QS_MP, QE_MP
-                   RHOQ_t_USER(k,i,j,iq) = RHOQ_t_USER(k,i,j,iq) &
-                                         - 0.5_RP*(SINK_UP + SINK_CEN) &
-                                         * (QTRC_column(k+1,iq) - QTRC_column(k,iq))*RFDZ(k)
-                enddo
-             endif
-
-             ! -- energy --
-             RHOT_t_USER(k,i,j) = RHOT_t_USER(k,i,j) &
-                                - 0.5_RP*(SINK_UP + SINK_CEN) &
-                                * (POTT_column(k+1) - POTT_column(k))*RFDZ(k)
-
-          enddo
-
-          ! large-scale sinking forcing, the simple first-order upwind advection scheme is used
-          do k = KS, KE-1
-             SINK_CEN = WLS(k)
-             SINK_UP = WLS(k+1)
-             SINK_DUP = WLS(k+2)
-
-             ! -- z momentum --
-             if (SHEBA_SWITCH_ACCE) then
-                MOMZ_t_USER(k,i,j) = MOMZ_t_USER(k,i,j) &
-                                   + 0.5_RP*(SINK_CEN + SINK_UP) &
-                                   * 0.5_RP*(DENS_column(k) + DENS_column(k+1))
-             else
-                MOMZ_t_USER(k,i,j) = MOMZ_t_USER(k,i,j) &
-                                   - SINK_UP &
-                                   * ( MOMZ_column(k+1)*2.0_RP/( DENS_column(k+2) &
-                                                               + DENS_column(k+1)) &
-                                     -  MOMZ_column(k  )*2.0_RP/( DENS_column(k+1) &
-                                                                + DENS_column(k  )))*RCDZ(k+1)
-             endif
-          enddo
-
-       endif ! end of experiment
 
     enddo
     enddo
@@ -798,7 +556,7 @@ contains
 
     call FILE_HISTORY_in( subsidence_sink(:,:,:), 'subsidence_sink', 'large-scale sinking', 'm/s', fill_halo=.true. )
 
-    if ( SHEBA_SWITCH_MOMZ ) then
+    if ( SWITCH_MOMZ ) then
        do k = KS, KE
        do i = IS, IE
        do j = JS, JE
@@ -808,7 +566,7 @@ contains
        enddo
     endif
 
-    if ( SHEBA_SWITCH_RHOU ) then
+    if ( SWITCH_RHOU ) then
        do k = KS, KE
        do i = IS, IE
        do j = JS, JE
@@ -818,7 +576,7 @@ contains
        enddo
     endif
 
-    if ( SHEBA_SWITCH_RHOV ) then
+    if ( SWITCH_RHOV ) then
        do k = KS, KE
        do i = IS, IE
        do j = JS, JE
@@ -828,7 +586,7 @@ contains
        enddo
     endif
 
-    if ( SHEBA_SWITCH_DENS ) then
+    if ( SWITCH_DENS ) then
        do k = KS, KE
        do i = IS, IE
        do j = JS, JE
@@ -838,7 +596,7 @@ contains
        enddo
     endif
 
-    if ( SHEBA_SWITCH_RHOT ) then
+    if ( SWITCH_RHOT ) then
        do k = KS, KE
        do i = IS, IE
        do j = JS, JE
@@ -848,7 +606,7 @@ contains
        enddo
     endif
 
-    if ( SHEBA_SWITCH_TEMP ) then
+    if ( SWITCH_TEMP ) then
        do k = KS, KE
        do i = IS, IE
        do j = JS, JE
@@ -858,7 +616,7 @@ contains
        enddo
     endif
 
-    if ( SHEBA_SWITCH_RHOQ ) then
+    if ( SWITCH_RHOQ ) then
        do k = KS, KE
        do i = IS, IE
        do j = JS, JE
@@ -888,222 +646,5 @@ contains
     return
   end subroutine USER_update
 
-  !-----------------------------------------------------------------------------
-  !> Read sounding data from file specialized for SHEBA project
-  subroutine read_sounding_sheba( &
-       DENS, VELX, VELY, POTT, QV, QCI, QNCI )
-    use scale_const, only: &
-       P00   => CONST_PRE00, &
-       Rdry  => CONST_Rdry, &
-       Rvap  => CONST_Rvap, &
-       CPdry => CONST_CPdry, &
-       CPvap => CONST_CPvap, &
-       CL    => CONST_CL
-    use scale_prc, only: &
-       PRC_abort
-    use scale_atmos_hydrometeor, only: &
-       ATMOS_HYDROMETEOR_dry
-    use scale_atmos_grid_cartesC, only: &
-       CZ => ATMOS_GRID_CARTESC_CZ, &
-       FZ => ATMOS_GRID_CARTESC_FZ
-    use scale_atmos_hydrostatic, only: &
-       HYDROSTATIC_buildrho => ATMOS_HYDROSTATIC_buildrho
-    implicit none
-
-    real(RP), intent(out) :: DENS(KA)
-    real(RP), intent(out) :: VELX(KA)
-    real(RP), intent(out) :: VELY(KA)
-    real(RP), intent(out) :: POTT(KA)
-    real(RP), intent(out) :: QV  (KA)
-    real(RP), intent(out) :: QCI (KA)
-    real(RP), intent(out) :: QNCI(KA)
-
-    real(RP) :: TEMP(KA)
-    real(RP) :: PRES(KA)
-    real(RP) :: QC  (KA)
-
-    real(RP) :: QV_ (KA)
-
-    character(len=H_LONG) :: ENV_IN_SOUNDING_file = ''
-    logical :: USE_HYDROSTATIC
-
-    integer, parameter :: EXP_klim = 501 ! there was a bug: EXP_klim = 100 (30/3/2020)
-    integer            :: EXP_kmax
-
-    real(RP) :: SFC_THETA            ! surface potential temperature [K]
-    real(RP) :: SFC_TEMP             ! temperature [K]
-    real(RP) :: SFC_PRES             ! surface pressure [hPa]
-    real(RP) :: SFC_RH               ! surface relative humidity
-    real(RP) :: SFC_QV               ! surface watervapor [g/kg]
-    real(RP) :: SFC_QCI              ! surface liquid and ice [g/kg]
-    real(RP) :: SFC_QNCI             ! surface liquid and ice conc. [/cm3]
-
-    real(RP) :: pres_sfc
-    real(RP) :: pott_sfc
-    real(RP) :: temp_sfc
-    real(RP) :: qv_sfc
-    real(RP) :: qc_sfc
-
-    real(RP) :: EXP_z   (EXP_klim+1) ! height      [m]
-    real(RP) :: EXP_pres(EXP_klim+1) ! pressure    [Pa]
-    real(RP) :: EXP_temp(EXP_klim+1) ! temperature [K]
-    real(RP) :: EXP_pott(EXP_klim+1) ! potential temperature [K]
-    real(RP) :: EXP_rh  (EXP_klim+1) ! relative humidity
-    real(RP) :: EXP_qv  (EXP_klim+1) ! water vapor [g/kg]
-    real(RP) :: EXP_qci (EXP_klim+1) ! liquid and ice [g/kg]
-    real(RP) :: EXP_qnci(EXP_klim+1) ! liquid and ice conc. [/cm3]
-    real(RP) :: EXP_u   (EXP_klim+1) ! velocity u  [m/s]
-    real(RP) :: EXP_v   (EXP_klim+1) ! velocity v  [m/s]
-
-    real(RP) :: fact1, fact2, R_gas, CP_gas, qd_assumption
-
-    logical :: converged
-
-    integer :: k, kref
-    integer :: fid
-    integer :: ierr
-
-    namelist / PARAM_MKINIT_SOUNDING / &
-       ENV_IN_SOUNDING_file, &
-       USE_HYDROSTATIC
-
-    !--- read namelist
-    rewind(IO_FID_CONF)
-    read(IO_FID_CONF,nml=PARAM_MKINIT_SOUNDING,iostat=ierr)
-
-    if( ierr < 0 ) then !--- missing
-       LOG_INFO("read_sounding_sheba",*) 'Not found namelist. Default used.'
-    elseif( ierr > 0 ) then !--- fatal error
-       LOG_ERROR("read_sounding_sheba",*) 'Not appropriate names in namelist PARAM_MKINIT_SOUNDING. Check!'
-       call PRC_abort
-    endif
-    LOG_NML(PARAM_MKINIT_SOUNDING)
-
-    !--- prepare sounding profile
-    LOG_INFO("read_sounding_sheba",*) 'Input sounding file:', trim(ENV_IN_SOUNDING_file)
-    fid = IO_get_available_fid()
-    open( fid,                                 &
-          file   = trim(ENV_IN_SOUNDING_file), &
-          form   = 'formatted',                &
-          status = 'old',                      &
-          iostat = ierr                        )
-
-    if ( ierr /= 0 ) then
-       LOG_ERROR("read_sounding_sheba",*) '[mod_mkinit/read_sounding] Input file not found!'
-    endif
-
-
-    !--- read sounding file till end
-    read(fid,*) SFC_PRES, SFC_TEMP, SFC_THETA, SFC_QV, SFC_QCI, SFC_QNCI
-
-    LOG_INFO("read_sounding_sheba",*) '+ Surface pressure [hPa]',                         SFC_PRES
-    LOG_INFO("read_sounding_sheba",*) '+ Surface temperature [K]',                        SFC_TEMP
-    LOG_INFO("read_sounding_sheba",*) '+ Surface pot. temp  [K]',                         SFC_THETA
-    LOG_INFO("read_sounding_sheba",*) '+ Surface water vapor [g/kg]',                     SFC_QV
-    LOG_INFO("read_sounding_sheba",*) '+ Surface liquid and ice [g/kg]',                  SFC_QCI
-    LOG_INFO("read_sounding_sheba",*) '+ Surface liquid and ice conc. [/cm3]',            SFC_QNCI
-
-    do k = 2, EXP_klim
-       read(fid,*,iostat=ierr) EXP_z(k), EXP_pres(k), EXP_temp(k), EXP_pott(k), EXP_qv(k), EXP_u(k), EXP_v(k), EXP_qci(k), EXP_qnci(k)
-       if ( ierr /= 0 ) exit
-    enddo
-
-    EXP_kmax = k - 1
-    close(fid)
-
-    ! Boundary
-    EXP_z   (1)          = 0.0_RP
-    EXP_pres(1)          = SFC_PRES
-    EXP_temp(1)          = SFC_TEMP
-    EXP_pott(1)          = SFC_THETA
-    EXP_qv  (1)          = SFC_QV
-    EXP_qci (1)          = SFC_QCI
-    EXP_qnci(1)          = SFC_QNCI
-    EXP_u   (1)          = EXP_u   (2)
-    EXP_v   (1)          = EXP_v   (2)
-    EXP_z   (EXP_kmax+1) = 100.E3_RP
-    EXP_pres(EXP_kmax+1) = EXP_pres(EXP_kmax)
-    EXP_temp(EXP_kmax+1) = EXP_temp(EXP_kmax)
-    EXP_pott(EXP_kmax+1) = EXP_pott(EXP_kmax)
-    EXP_qv  (EXP_kmax+1) = EXP_qv  (EXP_kmax)
-    EXP_qci (EXP_kmax+1) = EXP_qci (EXP_kmax)
-    EXP_qnci(EXP_kmax+1) = EXP_qnci(EXP_kmax)
-    EXP_u   (EXP_kmax+1) = EXP_u   (EXP_kmax)
-    EXP_v   (EXP_kmax+1) = EXP_v   (EXP_kmax)
-
-    do k = 1, EXP_kmax+1
-       EXP_qv(k)   = EXP_qv(k)   * 1.E-3_RP ! [g/kg]->[kg/kg]
-       EXP_qci(k)  = EXP_qci(k)  * 1.E-3_RP ! [g/kg]->[kg/kg]
-       EXP_pres(k) = EXP_pres(k) * 1.E2_RP  ! [hPa]->[Pa]
-    enddo
-
-    ! calc in dry condition
-    pres_sfc = SFC_PRES * 1.E2_RP ! [hPa]->[Pa]
-    pott_sfc = SFC_THETA
-    if ( .not. ATMOS_HYDROMETEOR_dry ) then
-       qv_sfc   = SFC_QV  * 1.E-3_RP ! [g/kg]->[kg/kg]
-       qc_sfc   = SFC_QCI * 1.E-3_RP ! [g/kg]->[kg/kg]
-    end if
-
-    !--- linear interpolate to model grid
-    do k = KS, KE
-       do kref = 2, EXP_kmax+1
-          if (       CZ(k) >  EXP_z(kref-1) &
-               .AND. CZ(k) <= EXP_z(kref  ) ) then
-
-             fact1 = ( EXP_z(kref) - CZ(k)   ) / ( EXP_z(kref)-EXP_z(kref-1) )
-             fact2 = ( CZ(k) - EXP_z(kref-1) ) / ( EXP_z(kref)-EXP_z(kref-1) )
-
-             PRES(k) = EXP_pres(kref-1) * fact1 &
-                     + EXP_pres(kref  ) * fact2
-             TEMP(k) = EXP_temp(kref-1) * fact1 &
-                     + EXP_temp(kref  ) * fact2
-             POTT(k) = EXP_pott(kref-1) * fact1 &
-                     + EXP_pott(kref  ) * fact2
-             QV  (k) = EXP_qv  (kref-1) * fact1 &
-                     + EXP_qv  (kref  ) * fact2
-             VELX(k) = EXP_u   (kref-1) * fact1 &
-                     + EXP_u   (kref  ) * fact2
-             VELY(k) = EXP_v   (kref-1) * fact1 &
-                     + EXP_v   (kref  ) * fact2
-             QCI (k) = EXP_qci (kref-1) * fact1 &
-                     + EXP_qci (kref  ) * fact2
-             QNCI(k) = EXP_qnci(kref-1) * fact1 &
-                     + EXP_qnci(kref  ) * fact2
-          endif
-       enddo
-    enddo
-
-    if ( ATMOS_HYDROMETEOR_dry ) QV(:) = 0.0_RP
-
-    if ( USE_HYDROSTATIC ) then
-       ! make density & pressure profile in moist condition
-       call HYDROSTATIC_buildrho( KA, KS, KE, &
-                                  POTT(:), QV(:), QCI(:),              & ! [IN]
-                                  pres_sfc, pott_sfc, qv_sfc, qc_sfc,  & ! [IN]
-                                  CZ(:), FZ(:),                        & ! [IN]
-                                  DENS(:), TEMP(:), PRES(:), temp_sfc, & ! [OUT]
-                                  converged                            ) ! [OUT]
-    else
-       do k = KS, KE
-          ! use gas law to deduce density
-          ! ASSUMPTION: rho_d = rho
-          qd_assumption = 1.0_RP - QV(k) - QCI(k)
-          R_gas = qd_assumption * Rdry  + QV(k) * Rvap
-          CP_gas = qd_assumption * CPdry + QV(k) * CPvap + QCI(k) * CL
-          !R_gas = (1.0_RP - QV(k)) * Rdry  + QV(k) * Rvap
-          DENS(k) = PRES(k) / R_gas / TEMP(k)
-          POTT(k) = TEMP(k) * (P00 / PRES(k))**(R_gas/CP_gas)
-       enddo
-    endif
-
-    LOG_INFO("read_sounding_sheba",*) 'Checking initial condition'
-    LOG_INFO("read_sounding_sheba",*) 'Z          D          T          P          O          V          C'
-    do k = KS, KE
-       LOG_INFO("read_sounding_sheba",'(7ES15.6)') CZ(k), DENS(k), TEMP(k), PRES(k), POTT(k),  QV(k), QCI(k)
-    enddo
-
-    return
-  end subroutine read_sounding_sheba
 
 end module mod_user
