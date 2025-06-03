@@ -139,12 +139,12 @@ contains
        USER_do, &
        USER_file, &
        USER_const, &
-       SWITCH_ACCE, &
+       SWITCH_VERTICAL_ACCE_TYPE, &
        SWITCH_MOMZ, &
        SWITCH_RHOU, &
        SWITCH_RHOV, &
        SWITCH_DENS, &
-       SWITCH_QVAP, &
+       SWITCH_QVAP_ONLY, &
        SWITCH_RHOT, &
        SWITCH_TEMP, &
        SWITCH_RHOQ
@@ -340,7 +340,8 @@ contains
   !> Calculation tendency
   subroutine USER_calc_tendency
     use scale_const, only: &
-       CONST_GRAV
+       CONST_GRAV, &
+       SCALE_CONST
     use scale_atmos_grid_cartesC_real, only: &
        REAL_CZ => ATMOS_GRID_CARTESC_REAL_CZ, &
        REAL_FZ => ATMOS_GRID_CARTESC_REAL_FZ
@@ -366,6 +367,13 @@ contains
     use mod_atmos_phy_mp_vars, only: &
        QS_MP, &
        QE_MP
+    use scale_time, only: &
+       TIME_NOWDATE
+    use scale_atmos_grid_cartesC, only: &
+      DOMAIN_CX => ATMOS_GRID_CARTESC_CX, &
+      DOMAIN_CY => ATMOS_GRID_CARTESC_CY, &
+      DOMAIN_CZ => ATMOS_GRID_CARTESC_CZ, &
+
     implicit none
     !---------------------------------------------------------------------------
 
@@ -404,6 +412,28 @@ contains
     RHOQ_t_USER(:,:,:,:) = 0.0_RP
 
     subsidence_sink = 0.0_RP
+
+    ! Perform drone cloud seeding. We only spread INP on the first row in J direction between x=[800, 1200] (m) assuming that size of the domain in I direction is 2 km.
+    ! The height of cloud seeding is at 500 m according to the BAMS paper.
+    ! Cloud seeding only happens after 1 hour into the simulation at 1800 for 12 min assuming the model correctly spins up after 1 hour.
+    if ( TIME_NOWDATE(4) >= 18 .and. TIME_NOWDATE(5) >= 0 .and. TIME_NOWDATE(6) >= 0 .and TIME_NOWDATE(4) < 19 .and. TIME_NOWDATE(5) < 12 ) then
+       do k = KS, KE
+         if ( DOMAIN_CZ(k) >= 500.0D0 - SCALE_CONST ) then
+           !$omp parallel do OMP_SCHEDULE_ collapse(2) default(none) &
+           !$omp private(i, j, iq) &
+           !$omp shared(TIME_NOWDATE, IS, IE, JS, JE, QA, RHOQ_T, RHOQ_t_USER, k)
+            do j = JS, JE
+            do i = IS, IE
+                ! we assume
+                do iq = 1, QA
+                   RHOQ_t(k,i,j,iq) = RHOQ_t(k,i,j,iq) + RHOQ_t_USER(k,i,j,iq)
+                enddo
+            enddo
+            enddo
+            exit
+         endif
+       enddo
+    endif
 
     !$omp parallel do &
     !$omp private(FZ,FDZ,RFDZ,RCDZ,DENS_column,TEMP_column,POTT_column,U_column,V_column,W_column,RHOT_column,MOMZ_column,QTRC_column, &
