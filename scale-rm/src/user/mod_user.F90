@@ -47,8 +47,6 @@ module mod_user
   !
   logical, private :: USER_do = .false. !< do user step?
 
-  character(len=H_SHORT) :: USER_experiment
-
   ! *********************************************************************
   ! -- these are defined for AMPS idealized runs
   ! *********************************************************************
@@ -141,7 +139,6 @@ contains
        USER_do, &
        USER_file, &
        USER_const, &
-       USER_experiment, &
        SWITCH_ACCE, &
        SWITCH_MOMZ, &
        SWITCH_RHOU, &
