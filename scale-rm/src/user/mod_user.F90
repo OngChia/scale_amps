@@ -418,7 +418,7 @@ contains
     ! Perform drone cloud seeding. We only spread INP on the first row in J direction between x=[800, 1200] (m) assuming that size of the domain in I direction is 2 km.
     ! The height of cloud seeding is at 500 m according to the BAMS paper.
     ! Cloud seeding only happens after 1 hour into the simulation at 1800 for 12 min assuming the model correctly spins up after 1 hour.
-    if ( DO_CLOUD_SEEDING == .true. .and. TIME_NOWDATE(4) >= 18 .and. TIME_NOWDATE(5) >= 0 .and. TIME_NOWDATE(6) >= 0 .and TIME_NOWDATE(4) < 19 .and. TIME_NOWDATE(5) < 12 ) then
+    if ( DO_CLOUD_SEEDING .and. TIME_NOWDATE(4) >= 18 .and. TIME_NOWDATE(5) >= 0 .and. TIME_NOWDATE(6) >= 0 .and. TIME_NOWDATE(4) < 19 .and. TIME_NOWDATE(5) < 12 ) then
        do k = KS, KE
          if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS ) then
            !$omp parallel do OMP_SCHEDULE_ collapse(2) default(none) &
