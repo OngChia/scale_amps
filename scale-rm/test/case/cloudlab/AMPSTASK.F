@@ -163,7 +163,8 @@ nu_aps = 2.0,2.0,2.0,2.0,
 ! 19. molal coefficient (average)
 phi_aps = 0.75, 0.75, 0.75, 0.75,
 ! 20. mass fraction of soluble material to total mass
-eps_ap = 1.0,0.0,0.2,0.7
+! eps_ap = 1.0,0.0,0.2,0.7
+eps_ap = 1.0,0.0,1.0,1.0
 ! 21. log of standard deviation (in natural log of radius in micro m)
 ! from Jaenicke (1993), marine type, mode II,I,III: log(sig)=0.210, 0.657, 0.396 in diameter
 !    log(sig) in radius is exactly the same as those in diameter.
