@@ -195,7 +195,7 @@ ap_sig_cp = 20.0, 1.4, 20.0, 20.0,
 !
 ! 25. Initial number concentraion of aerosol particles
 !N_ap_ini = 350.0, 0.00015, 1.8, 1.8,
-N_ap_ini = 315.5, 0.0, 1.5, 0.0,
+N_ap_ini = 317.0, 0.0, 0.0, 0.0,
 !
 ! * character variable of options
 ! 1. DRCETB
