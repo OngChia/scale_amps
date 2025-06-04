@@ -344,7 +344,7 @@ contains
   subroutine USER_calc_tendency
     use scale_const, only: &
        CONST_GRAV, &
-       SCALE_CONST
+       CONST_EPS
     use scale_atmos_grid_cartesC_real, only: &
        REAL_CZ => ATMOS_GRID_CARTESC_REAL_CZ, &
        REAL_FZ => ATMOS_GRID_CARTESC_REAL_FZ
@@ -375,8 +375,7 @@ contains
     use scale_atmos_grid_cartesC, only: &
       DOMAIN_CX => ATMOS_GRID_CARTESC_CX, &
       DOMAIN_CY => ATMOS_GRID_CARTESC_CY, &
-      DOMAIN_CZ => ATMOS_GRID_CARTESC_CZ, &
-
+      DOMAIN_CZ => ATMOS_GRID_CARTESC_CZ
     implicit none
     !---------------------------------------------------------------------------
 
@@ -419,9 +418,9 @@ contains
     ! Perform drone cloud seeding. We only spread INP on the first row in J direction between x=[800, 1200] (m) assuming that size of the domain in I direction is 2 km.
     ! The height of cloud seeding is at 500 m according to the BAMS paper.
     ! Cloud seeding only happens after 1 hour into the simulation at 1800 for 12 min assuming the model correctly spins up after 1 hour.
-    if ( DO_CLOUD_SEEDING .and. TIME_NOWDATE(4) >= 18 .and. TIME_NOWDATE(5) >= 0 .and. TIME_NOWDATE(6) >= 0 .and TIME_NOWDATE(4) < 19 .and. TIME_NOWDATE(5) < 12 ) then
+    if ( DO_CLOUD_SEEDING == .true. .and. TIME_NOWDATE(4) >= 18 .and. TIME_NOWDATE(5) >= 0 .and. TIME_NOWDATE(6) >= 0 .and TIME_NOWDATE(4) < 19 .and. TIME_NOWDATE(5) < 12 ) then
        do k = KS, KE
-         if ( DOMAIN_CZ(k) >= 500.0D0 - SCALE_CONST ) then
+         if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS ) then
            !$omp parallel do OMP_SCHEDULE_ collapse(2) default(none) &
            !$omp private(i, j, iq) &
            !$omp shared(TIME_NOWDATE, IS, IE, JS, JE, QA, RHOQ_T, RHOQ_t_USER, k)
