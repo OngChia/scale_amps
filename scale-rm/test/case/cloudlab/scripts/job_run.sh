@@ -3,7 +3,7 @@
 #SBATCH --ntasks=10
 #SBATCH --ntasks-per-node=10
 #SBATCH --time=3:00:00
-#SBATCH --job-name="run_sheba"
+#SBATCH --job-name="run_cloudlab_24"
 ###SBATCH --mem-per-cpu=1024
 ###SBATCH --output="LOG"
 #SBATCH --error="ERROR_LOG_RUN"
@@ -18,4 +18,4 @@ module load zlib/1.3-mktm5vz
 
 export OMP_STACKSIZE=16M
 
-mpirun -n 10 ./scale-rm run.conf
+mpirun -n 8 ./scale-rm run.conf
