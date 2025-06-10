@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=3:00:00
 #SBATCH --job-name="run_sno"
-###SBATCH --mem-per-cpu=1024
+#SBATCH --mem-per-cpu=100G
 ###SBATCH --output="LOG"
 #SBATCH --error="ERROR_LOG_SNO"
 ###SBATCH --open-mode=truncate
@@ -16,6 +16,6 @@ module load netcdf-fortran
 module load hdf5
 module load zlib/1.3-mktm5vz
 
-export OMP_STACKSIZE=16M
+export OMP_STACKSIZE=256M
 
 mpirun -n 1 ./sno sno.conf
