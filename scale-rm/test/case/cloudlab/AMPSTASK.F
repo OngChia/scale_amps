@@ -200,16 +200,16 @@ N_ap_ini = 317.0, 0.0, 0.0, 0.0,
 ! * character variable of options
 ! 1. DRCETB
 ! - directory where the collision coefficiency files are stored.
-DRCETB ='/cluster/scratch/congchia/scale-dev-develop/scale-rm/test/case/sheba/AMPS_DATA/collision_data'
+DRCETB ='/cluster/scratch/congchia/scale_amps/scale-rm/test/case/cloudlab/AMPS_DATA/collision_data'
 ! 2. IFMGTB
 ! - parameter or database file for mass-geometric relation of ice crystals.
 ! DRMGTB = 'prmRHI.v1.dat',
 ! 3. DRAPTB
 ! - directory where the aerosol activation file is stored.
-DRAPTB = '/cluster/scratch/congchia/scale-dev-develop/scale-rm/test/case/sheba/AMPS_DATA/apact'
+DRAPTB = '/cluster/scratch/congchia/scale_amps/scale-rm/test/case/cloudlab/AMPS_DATA/apact'
 ! 4. DRSTTB
 ! - directory where the statistics lookup table is stored.
-DRSTTB = '/cluster/scratch/congchia/scale-dev-develop/scale-rm/test/case/sheba/AMPS_DATA/statpack'
+DRSTTB = '/cluster/scratch/congchia/scale_amps/scale-rm/test/case/cloudlab/AMPS_DATA/statpack'
 !
 ! 5. Name of chemicals for aerosols
 ! APSNAME = 'NACL2','NACL2','NACL2'
