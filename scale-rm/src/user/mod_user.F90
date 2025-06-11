@@ -61,6 +61,13 @@ module mod_user
   logical :: SWITCH_RHOQ = .false.
   
   logical :: DO_CLOUD_SEEDING = .false.
+  real(RP) :: RELEASE_INP_CONC_TIME_RATE = 0.0_RP
+  real(RP) :: RELEASE_INP_X_LOWER_LIMIT = 0.0_RP
+  real(RP) :: RELEASE_INP_X_UPPER_LIMIT = 0.0_RP
+  integer :: RELEASE_INP_TIME_HOUR_LOWER_LIMIT = 0
+  integer :: RELEASE_INP_TIME_HOUR_UPPER_LIMIT = 0
+  integer :: RELEASE_INP_TIME_MIN_LOWER_LIMIT = 0
+  integer :: RELEASE_INP_TIME_MIN_UPPER_LIMIT = 0
 
   real(RP), allocatable :: largeScaleTTendency(:) ! large-scale temperature forcing
   real(RP), allocatable :: largeScaleQTendency(:) ! large-scale vapor forcing
@@ -150,7 +157,14 @@ contains
        SWITCH_RHOT, &
        SWITCH_TEMP, &
        SWITCH_RHOQ, &
-       DO_CLOUD_SEEDING
+       DO_CLOUD_SEEDING, &
+       RELEASE_INP_CONC_TIME_RATE, &
+       RELEASE_INP_X_LOWER_LIMIT, &
+       RELEASE_INP_X_UPPER_LIMIT, &
+       RELEASE_INP_TIME_HOUR_LOWER_LIMIT, &
+       RELEASE_INP_TIME_HOUR_UPPER_LIMIT, &
+       RELEASE_INP_TIME_MIN_LOWER_LIMIT, &
+       RELEASE_INP_TIME_MIN_UPPER_LIMIT
 
     !---------------------------------------------------------------------------
 
@@ -376,6 +390,13 @@ contains
       DOMAIN_CX => ATMOS_GRID_CARTESC_CX, &
       DOMAIN_CY => ATMOS_GRID_CARTESC_CY, &
       DOMAIN_CZ => ATMOS_GRID_CARTESC_CZ
+    use scale_atmos_phy_mp_amps, only: &
+       nca, &
+       nba, &
+       I_QPPVA
+    use com_amps, only: &
+       coef_ap, &
+       eps_ap
     implicit none
     !---------------------------------------------------------------------------
 
@@ -397,7 +418,7 @@ contains
     real(RP) :: SINK_DUP, SINK_UP, SINK_CEN
 
 
-    integer  :: k, i, j, iq
+    integer  :: k, i, j, iq, ipa_qpa, ica, iba
 
     if ( .not. USER_do ) then
        return
@@ -417,19 +438,32 @@ contains
 
     ! Perform drone cloud seeding. We only spread INP on the first row in J direction between x=[800, 1200] (m) assuming that size of the domain in I direction is 2 km.
     ! The height of cloud seeding is at 500 m according to the BAMS paper.
-    ! Cloud seeding only happens after 1 hour into the simulation at 1800 for 12 min assuming the model correctly spins up after 1 hour.
-    if ( DO_CLOUD_SEEDING .and. TIME_NOWDATE(4) >= 18 .and. TIME_NOWDATE(5) >= 0 .and. TIME_NOWDATE(6) >= 0 .and. TIME_NOWDATE(4) < 19 .and. TIME_NOWDATE(5) < 12 ) then
+    ! Cloud seeding only happens after 1 hour into the simulation at 1800 for 2 min assuming the model correctly spins up after 1 hour.
+    if ( DO_CLOUD_SEEDING .and. TIME_NOWDATE(4) >= RELEASE_INP_TIME_HOUR_LOWER_LIMIT .and. TIME_NOWDATE(5) >= RELEASE_INP_TIME_MIN_LOWER_LIMIT .and. TIME_NOWDATE(6) >= 0 .and. TIME_NOWDATE(4) < RELEASE_INP_TIME_HOUR_UPPER_LIMIT .and. TIME_NOWDATE(5) < RELEASE_INP_TIME_MIN_UPPER_LIMIT ) then
        do k = KS, KE
-         if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS ) then
+         if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and DOMAIN_CY(JS) < 50.0D0 ) then
            !$omp parallel do OMP_SCHEDULE_ collapse(2) default(none) &
-           !$omp private(i, j, iq) &
-           !$omp shared(TIME_NOWDATE, IS, IE, JS, JE, QA, RHOQ_T, RHOQ_t_USER, k)
-            do j = JS, JE
+           !$omp private(i, iq, ipa_qpa, ica, iba) &
+           !$omp shared(IS, IE, JS, JE, RHOQ_t, DENS, coef_ap, eps_ap, dt, k, nca, nba, I_QPPVA)
             do i = IS, IE
-                ! we assume
-                do iq = 1, QA
-                   RHOQ_t(k,i,j,iq) = RHOQ_t(k,i,j,iq) + RHOQ_t_USER(k,i,j,iq)
-                enddo
+                if ( DOMAIN_CX(k) >= RELEASE_INP_X_LOWER_LIMIT .and. DOMAIN_CX(k) <= RELEASE_INP_X_UPPER_LIMIT ) then
+                   ipa_qpa = 0
+                   do ica = 1, nca
+                      do iba = 1, nba
+                         if ( ica /= 3 ) then
+                            ipa_qpa = ipa_qpa + 3
+                            cycle
+                         endif
+                         RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa) = RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa) + &
+                            RELEASE_INP_CONC_TIME_RATE * coef_ap(ica) / dt * 1000.0_RP
+                         RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+1) = RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+1) + &
+                            RELEASE_INP_CONC_TIME_RATE * DENS(k,i,JS) / dt
+                         RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+2) = RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+2) + &
+                            RELEASE_INP_CONC_TIME_RATE * eps_ap(ica) / dt * 1000.0_RP
+                         ipa_qpa = ipa_qpa + 3
+                      enddo
+                   enddo
+                endif
             enddo
             enddo
             exit

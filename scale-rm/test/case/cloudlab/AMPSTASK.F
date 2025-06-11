@@ -77,8 +77,8 @@ dtype_a = 3,4,3,3
 ! -5: initialize aerosol groups, but predict only IN category and pass it to dynamic model (mean radius fixed)
 ! -6: initialize aerosol groups, but do not pass any change of aerosols to dynamic model (mean radius fixed)
 !flagp_a = 1
-!flagp_a = 2
-flagp_a = -3
+flagp_a = 2
+!flagp_a = -3
 !
 ! 24. habit growth determination
 !     0: max frequency, 1: random number method
@@ -138,9 +138,9 @@ minmass_a = 1.0E-21
 M_aps = 115.11,115.11,115.11,115.11,
 ! 15. molecular weights of insoluble part
 ! silver iodide (AgI)
-! M_api = 234.77,234.77,234.77,234.77
+M_api = 234.77,234.77,234.77,234.77
 ! Kaolinite (Al2Si2O5(OH)4)
-M_api = 258.16,258.16,258.16,258.16
+! M_api = 258.16,258.16,258.16,258.16
 ! 16. bulk density of soluble material for CCN
 ! NaCl
 ! den_aps = 2.16,2.16,2.16,2.16
@@ -150,9 +150,9 @@ M_api = 258.16,258.16,258.16,258.16
 den_aps = 1.79,1.79,1.79,1.79,
 ! 17. bulk density of insoluble material for CCN
 ! silver iodide (AgI)
-!den_api = 5.683,5.683,5.683,5.683
+den_api = 5.683,5.683,5.683,5.683
 ! Kaolinite (Al2Si2O5(OH)4)
-den_api = 2.6,2.6,2.6,2.6
+!den_api = 2.6,2.6,2.6,2.6
 ! 18. number of ions in dessociated solutes
 ! NaCl
 ! nu_aps = 2.0, 2.0, 2.0, 2.0,
@@ -164,7 +164,7 @@ nu_aps = 2.0,2.0,2.0,2.0,
 phi_aps = 0.75, 0.75, 0.75, 0.75,
 ! 20. mass fraction of soluble material to total mass
 ! eps_ap = 1.0,0.0,0.2,0.7
-eps_ap = 1.0,0.0,1.0,1.0
+eps_ap = 1.0,0.0,0.05,1.0
 ! 21. log of standard deviation (in natural log of radius in micro m)
 ! from Jaenicke (1993), marine type, mode II,I,III: log(sig)=0.210, 0.657, 0.396 in diameter
 !    log(sig) in radius is exactly the same as those in diameter.
