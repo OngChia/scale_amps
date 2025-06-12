@@ -141,6 +141,7 @@ module scale_atmos_phy_mp_amps
   integer  :: l_aadv_version     = 2
   integer  :: l_reff_version     = 2
   integer  :: iadvv              = 1
+  logical  :: fix_aerosol_type(4) = .true.
 
   integer  :: nx, ny, nz, nzh
   integer, parameter :: max_nmoments_liq=4, max_nmoments_ice=16, max_nmoments_aero=3
@@ -353,6 +354,7 @@ contains
        l_aadv_version,     & ! 1 for all PPVs advected in the same fasion, 2 for modified advection for non-mass PPVs
        l_axis_limit,       & ! whether center of gravity axis (ag and cg) limit=1 is applied, default is true
        l_reff_version,     & ! using (1) maximum dimension or (2) equivalent spherical radius for calculating radiation
+       fix_aerosol_type,   & ! types of aerosols that are fixed if l_fix_aerosols is true
        amps_debug,         & ! debugging on or off
        amps_ignore           ! ignore amps microphysics or not
 
@@ -1532,7 +1534,7 @@ contains
     !$omp shared(CM, &
     !$omp        nz,nzh, &
     !$omp        IS,JS,KS,IE,JE,KE,IA,JA,KA, &
-    !$omp        level,l_gaxis_version,l_bin_shift,l_axis_limit,l_fix_aerosols,l_sediment,l_fill_aerosols,ini_aerosol_prf,amps_debug, &
+    !$omp        level,l_gaxis_version,l_bin_shift,l_axis_limit,l_fix_aerosols,l_sediment,l_fill_aerosols,ini_aerosol_prf,amps_debug,fix_aerosol_type, &
     !$omp        jseed,isect_seed,nextn,ifrst,seed_sec, &
     !$omp        TIME_AMPS,dt, &
     !$omp        QDRY,QTRC,DENS,W,MOMZ,PRES,TEMP,U,V,CVtot,SFLX_rain,SFLX_snow, &
@@ -1922,11 +1924,13 @@ contains
        if (l_fix_aerosols) then
           do k = KS, KE
              do ica = 1, nca
-                do iba = 1, nba
-                   do ipa = 1, npa-2
-                      qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
+                if ( fix_aerosol_type(ica) == .true. ) then
+                   do iba = 1, nba
+                      do ipa = 1, npa-2
+                         qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
+                      enddo
                    enddo
-                enddo
+                endif
              enddo
           enddo
        endif
