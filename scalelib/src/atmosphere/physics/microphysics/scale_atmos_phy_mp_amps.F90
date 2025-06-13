@@ -120,7 +120,7 @@ module scale_atmos_phy_mp_amps
   !
   integer, parameter :: k1eta = 2
 
-  integer :: QA, I_QV, I_QL, I_QW, I_QI, I_QPPVL, I_QPPVI, I_QPPVA
+  integer, public :: QA, I_QV, I_QL, I_QW, I_QI, I_QPPVL, I_QPPVI, I_QPPVA
   integer :: ivis = 1
   !integer, dimension(max_nmoments_liq)  :: I_scl2ship_l
   !integer, dimension(max_nmoments_ice)  :: I_scl2ship_i
@@ -286,19 +286,19 @@ module scale_atmos_phy_mp_amps
   real(RP), allocatable :: ADVPPMZ(:,:,:,:), ADVPPMZE(:,:,:)
 
   ! indices about the moment, bin, and categories
-  integer :: npr       ! number of moments of a liquid bin
-  integer :: nbr       ! number of liquid bins
-  integer :: ncr       ! number of categories for liquid, always = 1
-  integer :: npi       ! number of moments of a ice bin
-  integer :: nbi       ! number of ice bins
-  integer :: nci       ! number of categories for ice, always = 1
-  integer :: npa       ! number of moments of a aerosols bin
-  integer :: nba       ! number of aerosols bins
-  integer :: nca       ! number of categories for aerosols
+  integer, public :: npr       ! number of moments of a liquid bin
+  integer, public :: nbr       ! number of liquid bins
+  integer, public :: ncr       ! number of categories for liquid, always = 1
+  integer, public :: npi       ! number of moments of a ice bin
+  integer, public :: nbi       ! number of ice bins
+  integer, public :: nci       ! number of categories for ice, always = 1
+  integer, public :: npa       ! number of moments of a aerosols bin
+  integer, public :: nba       ! number of aerosols bins
+  integer, public :: nca       ! number of categories for aerosols
 
   ! number of liquid and ice PPV stored in SCALE
-  integer :: numberPPVL
-  integer :: numberPPVI
+  integer, public :: numberPPVL
+  integer, public :: numberPPVI
 
   ! local temperory variables for level of complexity
   integer :: level
