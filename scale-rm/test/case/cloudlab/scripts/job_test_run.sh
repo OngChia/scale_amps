@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#SBATCH --ntasks=8
+#SBATCH --ntasks=16
 #SBATCH --ntasks-per-node=8
-#SBATCH --cpus-per-task=6
+#SBATCH --cpus-per-task=3
 #SBATCH --time=3:00:00
 #SBATCH --job-name="run_cloudlab_24"
 #SBATCH --mem-per-cpu=2G
@@ -21,4 +21,4 @@ module load zlib/1.3-mktm5vz
 export OMP_STACKSIZE=256M
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-mpirun -n 8 ./scale-rm run.conf
+mpirun -n 16 ./scale-rm run.conf
