@@ -389,7 +389,8 @@ contains
        QS_MP, &
        QE_MP
     use scale_time, only: &
-       TIME_NOWDATE
+       TIME_NOWDATE, &
+       dt => TIME_DTSEC
     use scale_atmos_grid_cartesC, only: &
       DOMAIN_CX => ATMOS_GRID_CARTESC_CX, &
       DOMAIN_CY => ATMOS_GRID_CARTESC_CY, &
@@ -448,11 +449,11 @@ contains
          TIME_NOWDATE(5) >= RELEASE_INP_TIME_MIN_LOWER_LIMIT .and. &
          TIME_NOWDATE(6) >= RELEASE_INP_TIME_SEC_LOWER_LIMIT .and. &
          TIME_NOWDATE(4) < RELEASE_INP_TIME_HOUR_UPPER_LIMIT .and. &
-         TIME_NOWDATE(5) < RELEASE_INP_TIME_MIN_UPPER_LIMIT &
+         TIME_NOWDATE(5) < RELEASE_INP_TIME_MIN_UPPER_LIMIT .and. &
          TIME_NOWDATE(6) < RELEASE_INP_TIME_SEC_UPPER_LIMIT &
          ) then
        do k = KS, KE
-         if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and DOMAIN_CY(JS) < 50.0D0 ) then
+         if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. DOMAIN_CY(JS) < 50.0D0 ) then
            !$omp parallel do OMP_SCHEDULE_ collapse(2) default(none) &
            !$omp private(i, iq, ipa_qpa, ica, iba) &
            !$omp shared(IS, IE, JS, JE, RHOQ_t, DENS, coef_ap, eps_ap, dt, k, nca, nba, I_QPPVA)
@@ -475,7 +476,6 @@ contains
                       enddo
                    enddo
                 endif
-            enddo
             enddo
             exit
          endif
