@@ -68,6 +68,8 @@ module mod_user
   integer :: RELEASE_INP_TIME_HOUR_UPPER_LIMIT = 0
   integer :: RELEASE_INP_TIME_MIN_LOWER_LIMIT = 0
   integer :: RELEASE_INP_TIME_MIN_UPPER_LIMIT = 0
+  integer :: RELEASE_INP_TIME_SEC_LOWER_LIMIT = 0
+  integer :: RELEASE_INP_TIME_SEC_UPPER_LIMIT = 0
 
   real(RP), allocatable :: largeScaleTTendency(:) ! large-scale temperature forcing
   real(RP), allocatable :: largeScaleQTendency(:) ! large-scale vapor forcing
@@ -164,7 +166,9 @@ contains
        RELEASE_INP_TIME_HOUR_LOWER_LIMIT, &
        RELEASE_INP_TIME_HOUR_UPPER_LIMIT, &
        RELEASE_INP_TIME_MIN_LOWER_LIMIT, &
-       RELEASE_INP_TIME_MIN_UPPER_LIMIT
+       RELEASE_INP_TIME_MIN_UPPER_LIMIT, &
+       RELEASE_INP_TIME_SEC_LOWER_LIMIT, &
+       RELEASE_INP_TIME_SEC_UPPER_LIMIT
 
     !---------------------------------------------------------------------------
 
@@ -439,7 +443,14 @@ contains
     ! Perform drone cloud seeding. We only spread INP on the first row in J direction between x=[800, 1200] (m) assuming that size of the domain in I direction is 2 km.
     ! The height of cloud seeding is at 500 m according to the BAMS paper.
     ! Cloud seeding only happens after 1 hour into the simulation at 1800 for 2 min assuming the model correctly spins up after 1 hour.
-    if ( DO_CLOUD_SEEDING .and. TIME_NOWDATE(4) >= RELEASE_INP_TIME_HOUR_LOWER_LIMIT .and. TIME_NOWDATE(5) >= RELEASE_INP_TIME_MIN_LOWER_LIMIT .and. TIME_NOWDATE(6) >= 0 .and. TIME_NOWDATE(4) < RELEASE_INP_TIME_HOUR_UPPER_LIMIT .and. TIME_NOWDATE(5) < RELEASE_INP_TIME_MIN_UPPER_LIMIT ) then
+    if ( DO_CLOUD_SEEDING .and. &
+         TIME_NOWDATE(4) >= RELEASE_INP_TIME_HOUR_LOWER_LIMIT .and. &
+         TIME_NOWDATE(5) >= RELEASE_INP_TIME_MIN_LOWER_LIMIT .and. &
+         TIME_NOWDATE(6) >= RELEASE_INP_TIME_SEC_LOWER_LIMIT .and. &
+         TIME_NOWDATE(4) < RELEASE_INP_TIME_HOUR_UPPER_LIMIT .and. &
+         TIME_NOWDATE(5) < RELEASE_INP_TIME_MIN_UPPER_LIMIT &
+         TIME_NOWDATE(6) < RELEASE_INP_TIME_SEC_UPPER_LIMIT &
+         ) then
        do k = KS, KE
          if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and DOMAIN_CY(JS) < 50.0D0 ) then
            !$omp parallel do OMP_SCHEDULE_ collapse(2) default(none) &
