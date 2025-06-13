@@ -15,7 +15,6 @@ module load openmpi/4.1.6
 module load netcdf-c
 module load netcdf-fortran
 module load hdf5
-module load openmpi
 module load zlib/1.3-mktm5vz
 
 export OMP_STACKSIZE=256M
