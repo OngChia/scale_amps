@@ -457,8 +457,8 @@ contains
            !$omp parallel do OMP_SCHEDULE_ default(none) &
            !$omp private(i, ipa_qpa, ica, iba) &
            !$omp shared(IS, IE, JS, JE, RHOQ_t, DENS, coef_ap, eps_ap, dt, k, nca, nba, I_QPPVA, &
-           !£omp        DOMAIN_CX, RELEASE_INP_X_LOWER_LIMIT, RELEASE_INP_X_UPPER_LIMIT, &
-           !£omp        RELEASE_INP_CONC_TIME_RATE)
+           !$omp        DOMAIN_CX, RELEASE_INP_X_LOWER_LIMIT, RELEASE_INP_X_UPPER_LIMIT, &
+           !$omp        RELEASE_INP_CONC_TIME_RATE)
             do i = IS, IE
                 if ( DOMAIN_CX(k) >= RELEASE_INP_X_LOWER_LIMIT .and. DOMAIN_CX(k) <= RELEASE_INP_X_UPPER_LIMIT ) then
                    ipa_qpa = 0
