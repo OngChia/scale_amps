@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --ntasks=16
-#SBATCH --ntasks-per-node=8
+#SBATCH --ntasks-per-node=2
 #SBATCH --cpus-per-task=3
 #SBATCH --time=1:00:00
 #SBATCH --job-name="init_cloudlab_24"

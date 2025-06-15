@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #SBATCH --ntasks=16
-#SBATCH --ntasks-per-node=8
+#SBATCH --ntasks-per-node=2
 #SBATCH --cpus-per-task=3
-#SBATCH --time=3:00:00
+#SBATCH --time=8:00:00
 #SBATCH --job-name="run_cloudlab_24"
 #SBATCH --mem-per-cpu=2G
 ###SBATCH --output="LOG"
