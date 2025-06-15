@@ -429,6 +429,8 @@ contains
        return
     endif
 
+    LOG_PROGRESS(*) 'atmosphere / user'
+
     MOMZ_t_USER(:,:,:) = 0.0_RP
     RHOU_t_USER(:,:,:) = 0.0_RP
     RHOV_t_USER(:,:,:) = 0.0_RP
@@ -452,6 +454,7 @@ contains
          TIME_NOWDATE(5) < RELEASE_INP_TIME_MIN_UPPER_LIMIT .and. &
          TIME_NOWDATE(6) < RELEASE_INP_TIME_SEC_UPPER_LIMIT &
          ) then
+       LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding'
        do k = KS, KE
          if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. DOMAIN_CY(JS) < 50.0D0 ) then
            !$omp parallel do OMP_SCHEDULE_ default(none) &
