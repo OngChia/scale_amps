@@ -699,9 +699,13 @@ contains
        do k = KS, KE
        do i = IS, IE
        do j = JS, JE
-          do iq = 1, QA
-             RHOQ_t(k,i,j,iq) = RHOQ_t(k,i,j,iq) + RHOQ_t_USER(k,i,j,iq)
-          enddo
+          if ( SWITCH_QVAP_ONLY ) then
+             RHOQ_t(k,i,j,QS_MP) = RHOQ_t(k,i,j,QS_MP) + RHOQ_t_USER(k,i,j,QS_MP)
+          else
+             do iq = QS_MP, QE_MP
+                RHOQ_t(k,i,j,iq) = RHOQ_t(k,i,j,iq) + RHOQ_t_USER(k,i,j,iq)
+             enddo
+          endif
        enddo
        enddo
        enddo
