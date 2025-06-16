@@ -141,7 +141,7 @@ module scale_atmos_phy_mp_amps
   integer  :: l_aadv_version     = 2
   integer  :: l_reff_version     = 2
   integer  :: iadvv              = 1
-  logical  :: fix_aerosol_type(4) = .true.
+  logical  :: fix_aerosol_type(4) = (/.true., .true., .true., .true./)
 
   integer  :: nx, ny, nz, nzh
   integer, parameter :: max_nmoments_liq=4, max_nmoments_ice=16, max_nmoments_aero=3
