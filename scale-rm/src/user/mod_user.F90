@@ -413,6 +413,7 @@ contains
     real(RP) :: RHOH_t_USER(KA,IA,JA)
     real(RP) :: TEMP_t_USER(KA,IA,JA)
     real(RP) :: RHOQ_t_USER(KA,IA,JA,QS_MP:QE_MP)
+    real(RP) :: RHOQ_t_SEED(KA,IA,JA,QS_MP:QE_MP)
 
     real(RP) :: subsidence_sink(KA,IA,JA)
 
@@ -440,6 +441,7 @@ contains
     TEMP_t_USER(:,:,:) = 0.0_RP
 
     RHOQ_t_USER(:,:,:,:) = 0.0_RP
+    RHOQ_t_SEED(:,:,:,:) = 0.0_RP
 
     subsidence_sink = 0.0_RP
 
@@ -459,7 +461,7 @@ contains
          if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. DOMAIN_CY(JS) < 50.0D0 ) then
            !$omp parallel do OMP_SCHEDULE_ default(none) &
            !$omp private(i, ipa_qpa, ica, iba) &
-           !$omp shared(IS, IE, JS, JE, RHOQ_t, DENS, coef_ap, eps_ap, dt, k, nca, nba, I_QPPVA, &
+           !$omp shared(IS, IE, JS, JE, RHOQ_t, DENS, coef_ap, eps_ap, dt, k, nca, nba, I_QPPVA,QS_MP,  &
            !$omp        DOMAIN_CX, RELEASE_INP_X_LOWER_LIMIT, RELEASE_INP_X_UPPER_LIMIT, &
            !$omp        RELEASE_INP_CONC_TIME_RATE)
             do i = IS, IE
@@ -471,12 +473,13 @@ contains
                             ipa_qpa = ipa_qpa + 3
                             cycle
                          endif
-                         RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa) = RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa) + &
+                         RHOQ_t_SEED(k,i,JS,QS_MP+I_QPPVA+ipa_qpa-1) = RHOQ_t_SEED(k,i,JS,QS_MP+I_QPPVA+ipa_qpa-1) + &
                             RELEASE_INP_CONC_TIME_RATE * coef_ap(ica) / dt * 1000.0_RP
-                         RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+1) = RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+1) + &
+                         RHOQ_t_SEED(k,i,JS,QS_MP+I_QPPVA+ipa_qpa) = RHOQ_t_SEED(k,i,JS,QS_MP+I_QPPVA+ipa_qpa) + &
                             RELEASE_INP_CONC_TIME_RATE * DENS(k,i,JS) / dt
-                         RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+2) = RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+2) + &
+                         RHOQ_t_SEED(k,i,JS,QS_MP+I_QPPVA+ipa_qpa+1) = RHOQ_t_SEED(k,i,JS,QS_MP+I_QPPVA+ipa_qpa+1) + &
                             RELEASE_INP_CONC_TIME_RATE * coef_ap(ica) * eps_ap(ica) / dt * 1000.0_RP
+                           
                          ipa_qpa = ipa_qpa + 3
                       enddo
                    enddo
@@ -486,6 +489,21 @@ contains
          endif
        enddo
     endif
+
+    ipa_qpa = 0
+    do ica = 1, nca
+       do iba = 1, nba
+          if ( ica /= 3 ) then
+             ipa_qpa = ipa_qpa + 3
+             cycle
+          endif
+          call FILE_HISTORY_in( RHOQ_t_SEED(:,:,:,QS_MP+I_QPPVA+ipa_qpa-1), 'RHOQ_t_SEED_mass', 'cloud-seeding mass',          'kg/m3/s',   fill_halo=.true. )
+          call FILE_HISTORY_in( RHOQ_t_SEED(:,:,:,QS_MP+I_QPPVA+ipa_qpa), 'RHOQ_t_SEED_conc', 'cloud-seeding concentration',          'kg/m3/s /cm3',   fill_halo=.true. )
+          call FILE_HISTORY_in( RHOQ_t_SEED(:,:,:,QS_MP+I_QPPVA+ipa_qpa+1), 'RHOQ_t_SEED_sol_mass', 'cloud-seeding soluböe mass',          'kg/m3/s',   fill_halo=.true. )
+          ipa_qpa = ipa_qpa + 3
+          LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding / indices', QS_MP+I_QPPVA+ipa_qpa-1, QS_MP+I_QPPVA+ipa_qpa, QS_MP+I_QPPVA+ipa_qpa+1
+       enddo
+    enddo
 
     !$omp parallel do &
     !$omp private(FZ,FDZ,RFDZ,RCDZ,DENS_column,TEMP_column,POTT_column,U_column,V_column,W_column,RHOT_column,MOMZ_column,QTRC_column, &
