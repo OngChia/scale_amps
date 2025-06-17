@@ -115,6 +115,8 @@ contains
     use scale_const, only: &
        PI => CONST_PI
     use scale_atmos_grid_cartesC, only: &
+       DOMAIN_CX => ATMOS_GRID_CARTESC_CX, &
+       DOMAIN_CY => ATMOS_GRID_CARTESC_CY, &
        CZ  => ATMOS_GRID_CARTESC_CZ, &
        FZ  => ATMOS_GRID_CARTESC_FZ
     implicit none
@@ -286,6 +288,22 @@ contains
     LOG_INFO_CONT('(1x,A)') '      GRID CENTER         Tadv            Qadv             W'
     do k = KS-1, KE
        LOG_INFO_CONT('(1x,A,ES15.5,A,ES15.5,A,ES15.5,A,ES15.5)') '    ', CZ(k), '   ', largeScaleTTendency(k), '   ', largeScaleQTendency(k), '   ', WLS(k)
+    enddo
+    LOG_INFO_CONT('(1x,A)') '====================================================='
+
+    LOG_NEWLINE
+    LOG_INFO("USER_setup",'(1x,A)') 'SEEDING CY'
+    LOG_INFO_CONT('(1x,A)') '====================================================='
+    do k = JS, JE
+       LOG_INFO_CONT('(1x,A,ES15.5)') '    ', DOMAIN_CY(k)
+    enddo
+    LOG_INFO_CONT('(1x,A)') '====================================================='
+
+    LOG_NEWLINE
+    LOG_INFO("USER_setup",'(1x,A)') 'SEEDING CX'
+    LOG_INFO_CONT('(1x,A)') '====================================================='
+    do k = IS, IE
+       LOG_INFO_CONT('(1x,A,ES15.5)') '    ', DOMAIN_CX(k)
     enddo
     LOG_INFO_CONT('(1x,A)') '====================================================='
 
