@@ -545,7 +545,7 @@ contains
           call FILE_HISTORY_in( RHOQ_t_SEED(:,:,:,QS_MP+I_QPPVA+ipa_qpa), 'RHOQ_t_SEED_conc', 'cloud-seeding concentration',          'kg/m3/s /cm3',   fill_halo=.true. )
           call FILE_HISTORY_in( RHOQ_t_SEED(:,:,:,QS_MP+I_QPPVA+ipa_qpa+1), 'RHOQ_t_SEED_sol_mass', 'cloud-seeding soluböe mass',          'kg/m3/s',   fill_halo=.true. )
           ipa_qpa = ipa_qpa + 3
-          !LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding / indices', QS_MP+I_QPPVA+ipa_qpa-1, QS_MP+I_QPPVA+ipa_qpa, QS_MP+I_QPPVA+ipa_qpa+1
+          LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding / indices', QS_MP+I_QPPVA+ipa_qpa-1, QS_MP+I_QPPVA+ipa_qpa, QS_MP+I_QPPVA+ipa_qpa+1
        enddo
     enddo
 
