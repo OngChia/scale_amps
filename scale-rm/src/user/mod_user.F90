@@ -476,7 +476,7 @@ contains
                          RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+1) = RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+1) + &
                             RELEASE_INP_CONC_TIME_RATE * DENS(k,i,JS) / dt
                          RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+2) = RHOQ_t(k,i,JS,I_QPPVA+ipa_qpa+2) + &
-                            RELEASE_INP_CONC_TIME_RATE * eps_ap(ica) / dt * 1000.0_RP
+                            RELEASE_INP_CONC_TIME_RATE * coef_ap(ica) * eps_ap(ica) / dt * 1000.0_RP
                          ipa_qpa = ipa_qpa + 3
                       enddo
                    enddo
