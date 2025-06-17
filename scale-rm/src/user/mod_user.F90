@@ -506,7 +506,7 @@ contains
             exit
          endif
        enddo
-    endifDOMAIN_CX
+    endif
 
     ipa_qpa = 0
     do ica = 1, nca
