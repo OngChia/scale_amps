@@ -519,6 +519,19 @@ contains
             exit
          endif
        enddo
+
+       !$omp parallel do default(none) private(i,j,k,iq) OMP_SCHEDULE_ collapse(2) &
+       !$omp shared(JS,JE,IS,IE,KS,KE,QS_MP,QE_MP,RHOQ_t,RHOQ_t_SEED)
+       do i = IS, IE
+       do j = JS, JE
+       do k = KS, KE
+          do iq = QS_MP, QE_MP
+             RHOQ_t(k,i,j,iq) = RHOQ_t(k,i,j,iq) + RHOQ_t_SEED(k,i,j,iq)
+          enddo
+       enddo
+       enddo
+       enddo
+
     endif
 
     ipa_qpa = 0
@@ -535,6 +548,7 @@ contains
           !LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding / indices', QS_MP+I_QPPVA+ipa_qpa-1, QS_MP+I_QPPVA+ipa_qpa, QS_MP+I_QPPVA+ipa_qpa+1
        enddo
     enddo
+
 
     !$omp parallel do &
     !$omp private(FZ,FDZ,RFDZ,RCDZ,DENS_column,TEMP_column,POTT_column,U_column,V_column,W_column,RHOT_column,MOMZ_column,QTRC_column, &
@@ -685,9 +699,11 @@ contains
     call FILE_HISTORY_in( subsidence_sink(:,:,:), 'subsidence_sink', 'large-scale sinking', 'm/s', fill_halo=.true. )
 
     if ( SWITCH_MOMZ ) then
-       do k = KS, KE
+       !$omp parallel do default(none) private(i,j,k) OMP_SCHEDULE_ collapse(2) &
+       !$omp shared(JS,JE,IS,IE,KS,KE,MOMZ_t,MOMZ_t_USER)
        do i = IS, IE
        do j = JS, JE
+       do k = KS, KE
           MOMZ_t(k,i,j) = MOMZ_t(k,i,j) + MOMZ_t_USER(k,i,j)
        enddo
        enddo
@@ -695,9 +711,11 @@ contains
     endif
 
     if ( SWITCH_RHOU ) then
-       do k = KS, KE
+       !$omp parallel do default(none) private(i,j,k) OMP_SCHEDULE_ collapse(2) &
+       !$omp shared(JS,JE,IS,IE,KS,KE,RHOU_t,RHOU_t_USER)
        do i = IS, IE
        do j = JS, JE
+       do k = KS, KE
           RHOU_t(k,i,j) = RHOU_t(k,i,j) + RHOU_t_USER(k,i,j)
        enddo
        enddo
@@ -705,9 +723,11 @@ contains
     endif
 
     if ( SWITCH_RHOV ) then
-       do k = KS, KE
+       !$omp parallel do default(none) private(i,j,k) OMP_SCHEDULE_ collapse(2) &
+       !$omp shared(JS,JE,IS,IE,KS,KE,RHOV_t,RHOV_t_USER)
        do i = IS, IE
        do j = JS, JE
+       do k = KS, KE
           RHOV_t(k,i,j) = RHOV_t(k,i,j) + RHOV_t_USER(k,i,j)
        enddo
        enddo
@@ -715,9 +735,11 @@ contains
     endif
 
     if ( SWITCH_DENS ) then
-       do k = KS, KE
+       !$omp parallel do default(none) private(i,j,k) OMP_SCHEDULE_ collapse(2) &
+       !$omp shared(JS,JE,IS,IE,KS,KE,DENS_t,DENS_t_USER)
        do i = IS, IE
        do j = JS, JE
+       do k = KS, KE
           DENS_t(k,i,j) = DENS_t(k,i,j) + DENS_t_USER(k,i,j)
        enddo
        enddo
@@ -725,9 +747,11 @@ contains
     endif
 
     if ( SWITCH_RHOT ) then
-       do k = KS, KE
+    !$omp parallel do default(none) private(i,j,k) OMP_SCHEDULE_ collapse(2) &
+       !$omp shared(JS,JE,IS,IE,KS,KE,DENS_t,DENS_t_USER)
        do i = IS, IE
        do j = JS, JE
+       do k = KS, KE
           RHOT_t(k,i,j) = RHOT_t(k,i,j) + RHOT_t_USER(k,i,j)
        enddo
        enddo
@@ -735,9 +759,11 @@ contains
     endif
 
     if ( SWITCH_TEMP ) then
-       do k = KS, KE
+       !$omp parallel do default(none) private(i,j,k) OMP_SCHEDULE_ collapse(2) &
+       !$omp shared(JS,JE,IS,IE,KS,KE,TEMP_t,TEMP_t_USER)
        do i = IS, IE
        do j = JS, JE
+       do k = KS, KE
           RHOT_t(k,i,j) = RHOT_t(k,i,j) + TEMP_t_USER(k,i,j)
        enddo
        enddo
@@ -745,9 +771,11 @@ contains
     endif
 
     if ( SWITCH_RHOQ ) then
-       do k = KS, KE
+       !$omp parallel do default(none) private(i,j,k,iq) OMP_SCHEDULE_ collapse(2) &
+       !$omp shared(JS,JE,IS,IE,KS,KE,QS_MP,QE_MP,SWITCH_QVAP_ONLY,RHOQ_t,RHOQ_t_USER)
        do i = IS, IE
        do j = JS, JE
+       do k = KS, KE
           if ( SWITCH_QVAP_ONLY ) then
              RHOQ_t(k,i,j,QS_MP) = RHOQ_t(k,i,j,QS_MP) + RHOQ_t_USER(k,i,j,QS_MP)
           else
