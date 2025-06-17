@@ -474,7 +474,7 @@ contains
          TIME_NOWDATE(5) < RELEASE_INP_TIME_MIN_UPPER_LIMIT .and. &
          TIME_NOWDATE(6) < RELEASE_INP_TIME_SEC_UPPER_LIMIT &
          ) then
-       LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding'
+       LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding', TIME_NOWDATE(4:6)
        do k = KS, KE
          if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. DOMAIN_CY(JS) < 50.0D0 ) then
            !$omp parallel do OMP_SCHEDULE_ default(none) &
@@ -506,7 +506,7 @@ contains
             exit
          endif
        enddo
-    endif
+    endifDOMAIN_CX
 
     ipa_qpa = 0
     do ica = 1, nca
