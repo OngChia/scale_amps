@@ -489,7 +489,7 @@ contains
        do k = KS, KE
          if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < 50.0D0 ) then
            LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding', k
-           !$omp parallel do OMP_SCHEDULE_ default(none) collapse(1) &
+           !$omp parallel do OMP_SCHEDULE_ default(none) &
            !$omp private(i, ipa_qpa, ica, iba) &
            !$omp shared(IS, IE, JS, JE, RHOQ_t_SEED, DENS, coef_ap, eps_ap, dt, k, nca, nba, I_QPPVA, QS_MP, PRC_2Drank, PRC_myrank, &
            !$omp        GLOBAL_DOMAIN_CX, RELEASE_INP_X_LOWER_LIMIT, RELEASE_INP_X_UPPER_LIMIT, &
