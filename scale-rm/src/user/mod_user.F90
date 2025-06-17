@@ -115,8 +115,9 @@ contains
     use scale_const, only: &
        PI => CONST_PI
     use scale_prc_cartesC, only: &
-      PRC_2Drank, &
-      PRC_myrank
+       PRC_2Drank
+    use scale_prc, only: &
+       PRC_myrank
     use scale_atmos_grid_cartesC, only: &
        GLOBAL_DOMAIN_CX => ATMOS_GRID_CARTESC_CXG, &
        GLOBAL_DOMAIN_CY => ATMOS_GRID_CARTESC_CYG, &
@@ -417,7 +418,8 @@ contains
        TIME_NOWDATE, &
        dt => TIME_DTSEC
     use scale_prc_cartesC, only: &
-       PRC_2Drank, &
+       PRC_2Drank
+    use scale_prc, only: &
        PRC_myrank
     use scale_atmos_grid_cartesC, only: &
        GLOBAL_DOMAIN_CX => ATMOS_GRID_CARTESC_CXG, &
