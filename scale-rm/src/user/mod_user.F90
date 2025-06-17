@@ -748,7 +748,7 @@ contains
 
     if ( SWITCH_RHOT ) then
     !$omp parallel do default(none) private(i,j,k) OMP_SCHEDULE_ collapse(2) &
-       !$omp shared(JS,JE,IS,IE,KS,KE,DENS_t,DENS_t_USER)
+       !$omp shared(JS,JE,IS,IE,KS,KE,RHOT_t,RHOT_t_USER)
        do i = IS, IE
        do j = JS, JE
        do k = KS, KE
