@@ -227,7 +227,7 @@ coll_level = 1
 !
 ! max CCN
 !
-CCNMAX = 300.0D0
+CCNMAX = 400.0D0
 !
 ! dust fraction
 !

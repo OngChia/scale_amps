@@ -115,6 +115,8 @@ contains
     use scale_const, only: &
        PI => CONST_PI
     use scale_atmos_grid_cartesC, only: &
+       GLOBAL_DOMAIN_CX => ATMOS_GRID_CARTESC_CXG, &
+       GLOBAL_DOMAIN_CY => ATMOS_GRID_CARTESC_CYG, &
        DOMAIN_CX => ATMOS_GRID_CARTESC_CX, &
        DOMAIN_CY => ATMOS_GRID_CARTESC_CY, &
        CZ  => ATMOS_GRID_CARTESC_CZ, &
@@ -295,7 +297,8 @@ contains
     LOG_INFO("USER_setup",'(1x,A)') 'SEEDING CY'
     LOG_INFO_CONT('(1x,A)') '====================================================='
     do k = JS, JE
-       LOG_INFO_CONT('(1x,A,ES15.5)') '    ', DOMAIN_CY(k)
+       LOG_INFO_CONT('(1x,A,I5,2ES15.5)') '    ', k, GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + k), DOMAIN_CY(k)
+       WRITE(*,'(1x,A,I5,2ES15.5)') '    ', k, GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + k), DOMAIN_CY(k)
     enddo
     LOG_INFO_CONT('(1x,A)') '====================================================='
 
@@ -303,7 +306,8 @@ contains
     LOG_INFO("USER_setup",'(1x,A)') 'SEEDING CX'
     LOG_INFO_CONT('(1x,A)') '====================================================='
     do k = IS, IE
-       LOG_INFO_CONT('(1x,A,ES15.5)') '    ', DOMAIN_CX(k)
+       LOG_INFO_CONT('(1x,A,I5,2ES15.5)') '    ', k, GLOBAL_DOMAIN_CX(PRC_2Drank(PRC_myrank, 1)*(IE - IS + 1) + k), DOMAIN_CX(k)
+       WRITE(*,'(1x,A,I5,2ES15.5)') '    ', k, GLOBAL_DOMAIN_CX(PRC_2Drank(PRC_myrank, 1)*(IE - IS + 1) + k), GLOBAL_DOMAIN_CX(k)
     enddo
     LOG_INFO_CONT('(1x,A)') '====================================================='
 
@@ -409,10 +413,13 @@ contains
     use scale_time, only: &
        TIME_NOWDATE, &
        dt => TIME_DTSEC
+    use scale_prc_cartesC, only: &
+       PRC_2Drank, &
+       PRC_myrank
     use scale_atmos_grid_cartesC, only: &
-      DOMAIN_CX => ATMOS_GRID_CARTESC_CX, &
-      DOMAIN_CY => ATMOS_GRID_CARTESC_CY, &
-      DOMAIN_CZ => ATMOS_GRID_CARTESC_CZ
+       GLOBAL_DOMAIN_CX => ATMOS_GRID_CARTESC_CXG, &
+       GLOBAL_DOMAIN_CY => ATMOS_GRID_CARTESC_CYG, &
+       DOMAIN_CZ => ATMOS_GRID_CARTESC_CZ
     use scale_atmos_phy_mp_amps, only: &
        nca, &
        nba, &
@@ -474,16 +481,17 @@ contains
          TIME_NOWDATE(5) < RELEASE_INP_TIME_MIN_UPPER_LIMIT .and. &
          TIME_NOWDATE(6) < RELEASE_INP_TIME_SEC_UPPER_LIMIT &
          ) then
-       LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding', TIME_NOWDATE(4:6)
+       LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding'
        do k = KS, KE
-         if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. DOMAIN_CY(JS) < 50.0D0 ) then
+         if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < 50.0D0 ) then
            !$omp parallel do OMP_SCHEDULE_ default(none) &
            !$omp private(i, ipa_qpa, ica, iba) &
-           !$omp shared(IS, IE, JS, JE, RHOQ_t_SEED, DENS, coef_ap, eps_ap, dt, k, nca, nba, I_QPPVA,QS_MP,  &
-           !$omp        DOMAIN_CX, RELEASE_INP_X_LOWER_LIMIT, RELEASE_INP_X_UPPER_LIMIT, &
+           !$omp shared(IS, IE, JS, JE, RHOQ_t_SEED, DENS, coef_ap, eps_ap, dt, k, nca, nba, I_QPPVA, QS_MP, PRC_2Drank, PRC_myrank, &
+           !$omp        GLOBAL_DOMAIN_CX, RELEASE_INP_X_LOWER_LIMIT, RELEASE_INP_X_UPPER_LIMIT, &
            !$omp        RELEASE_INP_CONC_TIME_RATE)
             do i = IS, IE
-                if ( DOMAIN_CX(k) >= RELEASE_INP_X_LOWER_LIMIT .and. DOMAIN_CX(k) <= RELEASE_INP_X_UPPER_LIMIT ) then
+                if ( GLOBAL_DOMAIN_CX(PRC_2Drank(PRC_myrank, 1)*(IE - IS + 1) + i) >= RELEASE_INP_X_LOWER_LIMIT .and. &
+                     GLOBAL_DOMAIN_CX(PRC_2Drank(PRC_myrank, 1)*(IE - IS + 1) + i) <= RELEASE_INP_X_UPPER_LIMIT ) then
                    ipa_qpa = 0
                    do ica = 1, nca
                       do iba = 1, nba
@@ -519,7 +527,7 @@ contains
           call FILE_HISTORY_in( RHOQ_t_SEED(:,:,:,QS_MP+I_QPPVA+ipa_qpa), 'RHOQ_t_SEED_conc', 'cloud-seeding concentration',          'kg/m3/s /cm3',   fill_halo=.true. )
           call FILE_HISTORY_in( RHOQ_t_SEED(:,:,:,QS_MP+I_QPPVA+ipa_qpa+1), 'RHOQ_t_SEED_sol_mass', 'cloud-seeding soluböe mass',          'kg/m3/s',   fill_halo=.true. )
           ipa_qpa = ipa_qpa + 3
-          LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding / indices', QS_MP+I_QPPVA+ipa_qpa-1, QS_MP+I_QPPVA+ipa_qpa, QS_MP+I_QPPVA+ipa_qpa+1
+          !LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding / indices', QS_MP+I_QPPVA+ipa_qpa-1, QS_MP+I_QPPVA+ipa_qpa, QS_MP+I_QPPVA+ipa_qpa+1
        enddo
     enddo
 

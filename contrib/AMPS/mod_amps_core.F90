@@ -7079,12 +7079,12 @@ contains
 
 
     ! set limit on activation based on the exisiting concentration
+    akk_lmt(n)=max(0.0_PS,(min(CCNMAX,used_Na_act(n))-nr_0(n))&
+                  /max(1.0e-30_PS,used_Na_act(n)))
 ! <<< 2017/04 T. Hashino modified for SHEBA
     if(flagp_a==-3.or.flagp_a==-2.or.flagp_a==-6.or.flagp_a==-5) then
       do n=1,ag%L
 !org        akk_lmt(n)=max(0.0_PS,(used_Na_act(n)-nr_0(n))/max(1.0e-30_PS,used_Na_act(n)))
-        akk_lmt(n)=max(0.0_PS,(min(CCNMAX,used_Na_act(n))-nr_0(n))&
-                  /max(1.0e-30_PS,used_Na_act(n)))
 
         akk_lmt_DHF(n)=max(0.0_PS,(min(INMAX,used_Na_DHF(n))-ni_0(n))&
                   /max(1.0e-30_PS,used_Na_DHF(n)))

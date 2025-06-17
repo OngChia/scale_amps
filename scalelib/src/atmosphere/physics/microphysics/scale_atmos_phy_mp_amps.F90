@@ -1918,21 +1918,38 @@ contains
           end select
 
           den_ini(:,i,j) = moist_denv(:)
-       endif
 
-       ! refill aerosols to initial condition
-       if ( l_fix_aerosols ) then
-          do k = KS, KE
-             do ica = 1, nca
-                if ( fix_aerosol_type(ica) ) then
-                   do iba = 1, nba
-                      do ipa = 1, npa-2
-                         qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
+          if ( l_fix_aerosols ) then
+             do k = KS, KE
+                do ica = 1, nca
+                   if ( fix_aerosol_type(ica) ) then
+                      do iba = 1, nba
+                         do ipa = 1, npa-2
+                            qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
+                         enddo
                       enddo
-                   enddo
-                endif
+                   endif
+                enddo
              enddo
-          enddo
+          endif
+
+       else
+
+          ! refill aerosols to initial condition
+          if ( l_fix_aerosols ) then
+             do k = KS, KE
+                do ica = 1, nca
+                   if ( fix_aerosol_type(ica) ) then
+                      do iba = 1, nba
+                         do ipa = 1, npa-2
+                            qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
+                         enddo
+                      enddo
+                   endif
+                enddo
+             enddo
+          endif
+
        endif
 
 !--------------------------------------------------------------------------
