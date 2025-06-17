@@ -461,7 +461,7 @@ contains
          if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. DOMAIN_CY(JS) < 50.0D0 ) then
            !$omp parallel do OMP_SCHEDULE_ default(none) &
            !$omp private(i, ipa_qpa, ica, iba) &
-           !$omp shared(IS, IE, JS, JE, RHOQ_t, DENS, coef_ap, eps_ap, dt, k, nca, nba, I_QPPVA,QS_MP,  &
+           !$omp shared(IS, IE, JS, JE, RHOQ_t_SEED, DENS, coef_ap, eps_ap, dt, k, nca, nba, I_QPPVA,QS_MP,  &
            !$omp        DOMAIN_CX, RELEASE_INP_X_LOWER_LIMIT, RELEASE_INP_X_UPPER_LIMIT, &
            !$omp        RELEASE_INP_CONC_TIME_RATE)
             do i = IS, IE
