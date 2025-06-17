@@ -311,7 +311,7 @@ contains
     LOG_INFO_CONT('(1x,A)') '====================================================='
     do k = IS, IE
        LOG_INFO_CONT('(1x,A,I5,2ES15.5)') '    ', k, GLOBAL_DOMAIN_CX(PRC_2Drank(PRC_myrank, 1)*(IE - IS + 1) + k), DOMAIN_CX(k)
-       WRITE(*,'(1x,A,2I5,2ES15.5)') '  CX  ', PRC_myrank, k, GLOBAL_DOMAIN_CX(PRC_2Drank(PRC_myrank, 1)*(IE - IS + 1) + k), GLOBAL_DOMAIN_CX(k)
+       WRITE(*,'(1x,A,2I5,2ES15.5)') '  CX  ', PRC_myrank, k, GLOBAL_DOMAIN_CX(PRC_2Drank(PRC_myrank, 1)*(IE - IS + 1) + k), DOMAIN_CX(k)
     enddo
     LOG_INFO_CONT('(1x,A)') '====================================================='
 
