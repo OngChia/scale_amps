@@ -7853,11 +7853,12 @@ end subroutine cal_growth_mode_hex_inl_vec
             oapt_a(k)=oapt_a(k)+qa(amt_q,1,ica,k)
             m_lmt=coef3*r3_lmt*den_apt(ica)
 
-            if(qa(acon_q,1,ica,k)<tconlmt/den1) then
-               qa(acon_q,1,ica,k)=tconlmt/den1
-               qa(amt_q,1,ica,k)=qa(acon_q,1,ica,k)*m_lmt
-               qa(ams_q,1,ica,k)=qa(amt_q,1,ica,k)*eps_ap(ica)
-            end if
+            ! TODO (Chia Rui): This code seems to assume a 1.e-5 background concentration, which is quite unphysical
+            ! if(qa(acon_q,1,ica,k)<tconlmt/den1) then
+            !    qa(acon_q,1,ica,k)=tconlmt/den1
+            !    qa(amt_q,1,ica,k)=qa(acon_q,1,ica,k)*m_lmt
+            !    qa(ams_q,1,ica,k)=qa(amt_q,1,ica,k)*eps_ap(ica)
+            ! end if
 
             if(qa(amt_q,1,ica,k)<m_lmt*qa(acon_q,1,ica,k)) then
 !               write(fid_alog,*)
