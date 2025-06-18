@@ -4012,13 +4012,13 @@ contains
     enddo
 
     ! set limit on activation based on the exisiting concentration
-    if(flagp_a==-3.or.flagp_a==-2.or.flagp_a==-6.or.flagp_a==-5) then
+    ! if(flagp_a==-3.or.flagp_a==-2.or.flagp_a==-6.or.flagp_a==-5) then
       do n=1,ag%L
 !org        akk_lmt(n)=max(0.0_PS,(used_Na_act(n)-nr_0(n))/max(1.0e-30_PS,used_Na_act(n)))
         akk_lmt(n)=max(0.0_PS,(min(CCNMAX,used_Na_act(n))-nr_0(n))&
                        /max(1.0e-30_PS,used_Na_act(n)))
       enddo
-    endif
+    ! endif
 !org    if(flagp_a==-3.or.flagp_a==-1.or.flagp_a==-6.or.flagp_a==-4) then
 !org      do n=1,ag%L
 !org        ni_0(n)=0.0_PS
@@ -7079,17 +7079,16 @@ contains
 
 
     ! set limit on activation based on the exisiting concentration
-    akk_lmt(n)=max(0.0_PS,(min(CCNMAX,used_Na_act(n))-nr_0(n))&
-                  /max(1.0e-30_PS,used_Na_act(n)))
 ! <<< 2017/04 T. Hashino modified for SHEBA
-    if(flagp_a==-3.or.flagp_a==-2.or.flagp_a==-6.or.flagp_a==-5) then
+    ! if(flagp_a==-3.or.flagp_a==-2.or.flagp_a==-6.or.flagp_a==-5) then
       do n=1,ag%L
 !org        akk_lmt(n)=max(0.0_PS,(used_Na_act(n)-nr_0(n))/max(1.0e-30_PS,used_Na_act(n)))
-
-        akk_lmt_DHF(n)=max(0.0_PS,(min(INMAX,used_Na_DHF(n))-ni_0(n))&
-                  /max(1.0e-30_PS,used_Na_DHF(n)))
+        akk_lmt(n)=max(0.0_PS,(min(CCNMAX,used_Na_act(n))-nr_0(n))&
+                  /max(1.0e-30_PS,used_Na_act(n)))
+        !akk_lmt_DHF(n)=max(0.0_PS,(min(INMAX,used_Na_DHF(n))-ni_0(n))&
+        !          /max(1.0e-30_PS,used_Na_DHF(n)))
       enddo
-    endif
+    !endif
 ! >>> 2017/04 T. Hashino for SHEBA
 
     do n=1,ag%L
