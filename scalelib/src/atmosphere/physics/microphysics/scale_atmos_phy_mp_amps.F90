@@ -2827,20 +2827,18 @@ contains
        do k = KS, KE
           ipa_qpa = 0
           do ica = 1, nca
-             if ( l_fix_aerosols .and. .not. fix_aerosol_type(ica) ) then
-                do iba = 1, nba
-                   RHOQ_t(k,i,j,I_QPPVA+ipa_qpa) = &
-                         (qapv(amt_q,iba,ica,k)*moist_denv(k) - &
-                         QTRC(k,i,j,I_QPPVA+ipa_qpa)*DENS(k,i,j))/dt
-                   RHOQ_t(k,i,j,I_QPPVA+ipa_qpa+1) = &
-                         (qapv(acon_q,iba,ica,k)*moist_denv(k)*0.001_RP - &
-                         QTRC(k,i,j,I_QPPVA+ipa_qpa+1)*DENS(k,i,j))/dt
-                   RHOQ_t(k,i,j,I_QPPVA+ipa_qpa+2) = &
-                         (qapv(ams_q,iba,ica,k)*moist_denv(k) - &
-                         QTRC(k,i,j,I_QPPVA+ipa_qpa+2)*DENS(k,i,j))/dt
-                   ipa_qpa = ipa_qpa + 3
-                enddo
-             endif
+             do iba = 1, nba
+                RHOQ_t(k,i,j,I_QPPVA+ipa_qpa) = &
+                      (qapv(amt_q,iba,ica,k)*moist_denv(k) - &
+                      QTRC(k,i,j,I_QPPVA+ipa_qpa)*DENS(k,i,j))/dt
+                RHOQ_t(k,i,j,I_QPPVA+ipa_qpa+1) = &
+                      (qapv(acon_q,iba,ica,k)*moist_denv(k)*0.001_RP - &
+                      QTRC(k,i,j,I_QPPVA+ipa_qpa+1)*DENS(k,i,j))/dt
+                RHOQ_t(k,i,j,I_QPPVA+ipa_qpa+2) = &
+                      (qapv(ams_q,iba,ica,k)*moist_denv(k) - &
+                      QTRC(k,i,j,I_QPPVA+ipa_qpa+2)*DENS(k,i,j))/dt
+                ipa_qpa = ipa_qpa + 3
+             enddo
           enddo
        enddo
 
