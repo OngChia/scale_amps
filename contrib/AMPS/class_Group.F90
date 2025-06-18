@@ -651,7 +651,7 @@ CONTAINS
     !     The minimum possible background concentration for large particle
     !     is assumed to be 1.0e-5 cm^-3
     !real(PS),parameter :: n_lmt_ap=1.0d-5
-    real(PS),parameter :: n_lmt_ap=0.0d
+    real(PS),parameter :: n_lmt_ap=0.0d0
 !parcel model    real(PS),parameter :: n_lmt_ap=1.0e-15
     !     The minimum radius possible for accumulation particles
     real(PS),parameter :: r3_lmt=1.0d-18
