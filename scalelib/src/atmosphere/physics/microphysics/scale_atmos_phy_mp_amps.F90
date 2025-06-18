@@ -1536,7 +1536,7 @@ contains
     !$omp shared(CM, &
     !$omp        nz,nzh, &
     !$omp        IS,JS,KS,IE,JE,KE,IA,JA,KA, &
-    !$omp        level,l_gaxis_version,l_bin_shift,l_axis_limit,l_fix_aerosols,l_sediment,l_fill_aerosols,ini_aerosol_prf,amps_debug,fix_aerosol_type, &
+    !$omp        level,l_gaxis_version,l_bin_shift,l_axis_limit,l_fix_aerosols,l_sediment,l_fill_aerosols,ini_aerosol_prf,amps_debug,fix_aerosol_type,l_restart, &
     !$omp        jseed,isect_seed,nextn,ifrst,seed_sec, &
     !$omp        TIME_AMPS,dt, &
     !$omp        QDRY,QTRC,DENS,W,MOMZ,PRES,TEMP,U,V,CVtot,SFLX_rain,SFLX_snow, &
