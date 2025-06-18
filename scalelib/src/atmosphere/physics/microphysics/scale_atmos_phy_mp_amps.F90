@@ -131,6 +131,7 @@ module scale_atmos_phy_mp_amps
 
   logical  :: amps_debug         = .false.
   logical  :: amps_ignore        = .false.
+  logical  :: l_restart          = .false.
   logical  :: l_fix_aerosols     = .true.
   logical  :: l_sediment         = .true.
   logical  :: l_fill_aerosols    = .false.
@@ -346,6 +347,7 @@ contains
        nbin_h,             & ! number of bins for haze particles, e.x. 20 for 40 liq. bins
        iadvv,              & ! 1 for Euler, 2 for PPM sedimentation scheme
        ini_aerosol_prf,    & ! 1 for SHEBA, 2 for MPACE, 3 for general use (1 and 2 OVERRIDE aerosol settings in AMPSTASK.F)
+       l_restart,          & ! whether restart to fill aerosols, this should be replaced by SCALE restart namelist!!!!!!!
        l_fix_aerosols,     & ! invariant aerosols throughout integration
        l_sediment,         & ! sediment on or off
        l_fill_aerosols,    & ! fill aerosols in cloud-free region or not
@@ -1919,15 +1921,17 @@ contains
 
           den_ini(:,i,j) = moist_denv(:)
 
-          do k = KS, KE
-             do ica = 1, nca
-                do iba = 1, nba
-                   do ipa = 1, npa-2
-                      qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
+          if ( .not. l_restart ) then
+             do k = KS, KE
+                do ica = 1, nca
+                   do iba = 1, nba
+                      do ipa = 1, npa-2
+                         qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
+                      enddo
                    enddo
                 enddo
              enddo
-          enddo
+          endif
 
        else
 
