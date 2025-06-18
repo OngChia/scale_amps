@@ -3237,7 +3237,7 @@ contains
     ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     ! deposition/sorption nucleation based on Mayer (1992)
     if(iflg_dep/=0) then
-      call deposition_mode_vec(gs,ga,ag,level,mes_rc,flagp_a,ID,JD,KD &
+      call deposition_mode_vec(gs,ga,ag,level, &
                               ,vigp,rdsd,ihabit_gm_random)
     endif
     ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -17044,9 +17044,10 @@ contains
 
   subroutine deposition_mode_vec(gs,ga,ag,level &
                                 ,vigp,rdsd,ihabit_gm_random)
-    use mod_amps_utility, only: get_growth_mode_hex &
-                         ,cal_growth_mode_hex_inl_vec,random_genvar
-!tmp    use mod_amps_utility, only: get_growth_mode_hex_max
+    use class_Group, only: &
+       vap_igp_aux
+    use mod_amps_utility, only: cal_growth_mode_hex_inl_vec,random_genvar,get_cmod_inh
+!tmp    use mod_amps_utility, only: get_growth_mode_hex , get_growth_mode_hex_max
     ! -----------------------------------------------------------------------------------------
     ! assume insoluble particles to nucleate.
     ! -----------------------------------------------------------------------------------------
@@ -17196,7 +17197,7 @@ contains
 
         call acd_mode(ag%TV(n),r0(n),r0(n)&
              ,ex_vden &
-             ,gamma_d,1.0_PS,am0(n),d_mean_mass,d_axis_len(1,n))
+             ,gamma_d,1.0_PS,am0(n),d_mean_mass,d_axis_len(1,n),d_axis_len(2,n))
 
 
         phi=(r0(n)+d_axis_len(2,n))/(r0(n)+d_axis_len(1,n))
