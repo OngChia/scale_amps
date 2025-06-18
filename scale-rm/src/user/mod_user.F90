@@ -500,7 +500,7 @@ contains
                    ipa_qpa = 0
                    do ica = 1, nca
                       do iba = 1, nba
-                         if ( ica /= 3 ) then
+                         if ( ica /= 2 ) then
                             ipa_qpa = ipa_qpa + 3
                             cycle
                          endif
