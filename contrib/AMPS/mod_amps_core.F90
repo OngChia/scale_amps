@@ -3236,10 +3236,10 @@ contains
 !!c    write(*,*) "in 1"
     ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     ! deposition/sorption nucleation based on Mayer (1992)
-!org    if(iflg_dep/=0) then
-!org      call deposition_mode_vec(gs,ga,ag,level,mes_rc,flagp_a,ID,JD,KD &
-!org                              ,vigp,rdsd,ihabit_gm_random)
-!org    endif
+    if(iflg_dep/=0) then
+      call deposition_mode_vec(gs,ga,ag,level,mes_rc,flagp_a,ID,JD,KD &
+                              ,vigp,rdsd,ihabit_gm_random)
+    endif
     ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !!c    do n=1,gs%L
 !!c       if( mes_rc(n) == 0 ) cycle
@@ -17042,328 +17042,328 @@ contains
 
   end subroutine cal_ratio_mass_vd_vec
 
-!!$  subroutine deposition_mode_vec(gs,ga,ag,level &
-!!$                                ,vigp,rdsd,ihabit_gm_random)
-!!$    use mod_amps_utility, only: get_growth_mode_hex &
-!!$                         ,cal_growth_mode_hex_inl_vec,random_genvar
-!!$!tmp    use mod_amps_utility, only: get_growth_mode_hex_max
-!!$    ! -----------------------------------------------------------------------------------------
-!!$    ! assume insoluble particles to nucleate.
-!!$    ! -----------------------------------------------------------------------------------------
-!!$    ! solid hydrometeor group
-!!$    type (Group), intent(inout)   :: gs
-!!$    ! aerosol group
-!!$    type (Group), dimension(*)  :: ga
-!!$    ! thermo variable object
-!!$    type (AirGroup), intent(inout)  :: ag
-!!$    ! level of complexity
-!!$    integer, intent(in)           :: level
-!!$
-!!$    !integer :: ID(*),JD(*),KD(*)
-!!$    !
-!!$    ! Inherent Growth parameterization
-!!$    type (vap_igp_aux),intent(in) :: vigp
-!!$    type(random_genvar),intent(inout) :: rdsd
-!!$    ! random generaion: 1, max frequency: 0
-!!$    integer, intent(in)           :: ihabit_gm_random
-!!$
-!!$    ! message from reality-check
-!!$    !integer,dimension(*)   :: mes_rc
-!!$    !integer,intent(in)            :: flagp_a
-!!$
-!!$    ! the nucleated ice mass, and the aerosol mass
-!!$    real(PS),dimension(LMAX) :: am1,am0
-!!$    ! radius of the nucleated ice crystal
-!!$    real(PS),dimension(LMAX) :: r0
-!!$    ! number concentration of existing ice particles
-!!$    real(PS),dimension(LMAX) :: ni_0
-!!$
-!!$    integer,dimension(LMAX) :: IBI
-!!$
-!!$    ! +++++++++++++++++++++++++++++++++++++++++++++++
-!!$    ! tendency of
-!!$    ! (1) mass (g/cm^3)
-!!$    ! (2) concentration (#/cm^3)
-!!$    ! (3) volume (cm^3/cm^3)
-!!$    real(PS), dimension(3)        :: tend
-!!$
-!!$    ! produced concentration of ice nuclei
-!!$    real(PS)                      :: N_IN
-!!$    ! temperature of freezing
-!!$    real(PS), parameter           :: TF = 273.16
-!!$
-!!$    ! change of mass at mean mass point
-!!$    real(PS)                      :: d_mean_mass
-!!$
-!!$    ! inherent growth ratio
-!!$    real(PS),dimension(2,LMAX)            :: gamma
-!!$    real(PS)          :: gamma_d
-!!$    real(PS)     :: ex_vden
-!!$    real(PS)     :: cmod_inh
-!!$
-!!$    integer,dimension(LMAX)            :: growth_mode
-!!$
-!!$    ! non-mass variables of a representative particle in the shifted bin
-!!$    ! argument 1 : volume of circumscribing sphere
-!!$    !          2 : a-axis length
-!!$    !          3 : c-axis length
-!!$    !          4 : d-axis length
-!!$    !          5 : r-axis length
-!!$    !          6 : volume by riming
-!!$    !          7 : volume by aggregation
-!!$    !          8 : semi major axis length
-!!$    !          9 : semi minor axis length
-!!$    real(PS), dimension(mxnnonmc+2,LMAX)             :: Qp
-!!$
-!!$    real(PS), dimension(2,LMAX) :: d_axis_len
-!!$
-!!$    integer,dimension(LMAX)            :: icond1,icond2 &
-!!$                                         ,ierror
-!!$
-!!$    ! random number
-!!$    integer,dimension(LMAX) :: igm
-!!$
-!!$    real(PS),parameter :: mlmt=1.0e-30,nlmt=1.0e-30
-!!$    real(PS) :: phi,den_max
-!!$
-!!$    ! type of process
-!!$    integer                       :: pro_type=7
-!!$
-!!$    !integer    :: em ! not used
-!!$    integer    :: i,n
-!!$
-!!$    ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!!$    ! calculate the inherent growth ratio
-!!$    call cal_inherent_growth_ratio_vec(ag,gamma,vigp)
-!!$
-!!$
-!!$    do n=1,ag%L
-!!$! changed for SHEBA simulation
-!!$    if( ( ( ag%TV(n)%T_n <= TF-5.0.and.ag%TV(n)%s_v_n(1) > 0.0_PS) .or.&
-!!$          ( ag%TV(n)%s_v_n(2) >= 0.05_PS.and.ag%TV(n)%T_n < TF )).and.&
-!!$!!c      if( ( (ag%TV(n)%s_v_n(2) >= 0.05_PS).and.(ag%TV(n)%T_n < TF ) ).and.&
-!!$! end changed for SHEBA simulation
-!!$         (ga(2)%MS(1,n)%con>=nlmt.and.ga(2)%MS(1,n)%mass(1)>=mlmt) ) then
-!!$        icond1(n)=1
-!!$      else
-!!$        icond1(n)=0
-!!$      endif
-!!$    enddo
-!!$
-!!$    call cal_growth_mode_hex_inl_vec(igm,1,ag%L,ihabit_gm_random &
-!!$                      ,ag%TV(1:ag%L)%T,ag%TV(1:ag%L)%s_v(2),rdsd)
-!!$
-!!$    do n=1,ag%L
-!!$      d_axis_len(1,n)=0.0
-!!$      d_axis_len(2,n)=0.0
-!!$      ierror(n)=0
-!!$      if(icond1(n)==1.and.ag%TV(n)%s_v_n(2)>0.0_PS) then
-!!$        icond2(n)=1
-!!$
-!!$
-!!$        ! adjust inherent ratio according to the timestep used.
-!!$        !   The timstep adjusted ranges from 20 sec to 0.1 sec.
-!!$        !   The regime T<-20 C is less senstive to the inherent growth since the
-!!$        !   growth is much weaker.
-!!$        if(ag%TV(n)%T-273.16>-20.0_PS) then
-!!$          cmod_inh=get_cmod_inh(gs%dt)
-!!$        else
-!!$          cmod_inh=0.5_PS
-!!$        endif
-!!$        gamma(1,n) = 10.0_PS**(cmod_inh*log10(gamma(1,n)))
-!!$        gamma(2,n) = 10.0_PS**(cmod_inh*log10(gamma(2,n)))
-!!$        ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!!$        ! +++ calculate the excess vapor density +++
-!!$        ex_vden=ag%TV(n)%s_v(2)*ag%TV(n)%e_sat(2)/(R_v*ag%TV(n)%T)
-!!$
-!!$        if(ag%TV(n)%T<=253.16) then
-!!$          if(ag%TV(n)%nuc_gmode/=2.and.ag%TV(n)%nuc_gmode/=3) then
-!!$            gamma_d=gamma(igm(n),n)
-!!$          else
-!!$            gamma_d=gamma(ag%TV(n)%nuc_gmode-1,n)
-!!$          end if
-!!$        else
-!!$          ! NOTE: gamma is set up to be the same in T>-20C for planar and columnar growths.
-!!$          gamma_d=gamma(1,n)
-!!$        end if
-!!$
-!!$        r0(n)=((ga(2)%MS(1,n)%mean_mass/den_i)/3.0_PS/sq_three)**(1.0/3.0)
-!!$
-!!$        am0(n)=ga(2)%MS(1,n)%mean_mass
-!!$
-!!$        d_mean_mass=ga(2)%MS(1,n)%coef(1)*ag%TV(n)%s_v_n(2)*gs%dt
-!!$        am1(n)=am0(n)+d_mean_mass
-!!$
-!!$        call acd_mode(ag%TV(n),r0(n),r0(n)&
-!!$             ,ex_vden &
-!!$             ,gamma_d,1.0_PS,am0(n),d_mean_mass,d_axis_len(1,n))
-!!$
-!!$
-!!$        phi=(r0(n)+d_axis_len(2,n))/(r0(n)+d_axis_len(1,n))
-!!$        den_max=coef3sq3*phi*den_i/(coef4pi3*(1.0+phi**2)**1.5)
-!!$        d_axis_len(1,n)=(am1(n)/den_max/coef4pi3)**(1.0/3.0)/sqrt(1.0+phi**2.0)-r0(n)
-!!$        d_axis_len(2,n)=(r0(n)+d_axis_len(1,n))*phi-r0(n)
-!!$      else
-!!$        icond2(n)=0
-!!$        am1(n)=ga(2)%MS(1,n)%mean_mass
-!!$
-!!$      endif
-!!$    enddo
-!!$
-!!$    if(level==3.or.level==5.or.level==7) then
-!!$      do n=1,ag%L
-!!$        if(ag%TV(n)%T<=253.16) then
-!!$          growth_mode(n)=ag%TV(n)%nuc_gmode
-!!$        else
-!!$          if(d_axis_len(1,n)>d_axis_len(2,n)) then
-!!$            growth_mode(n)=2
-!!$          else
-!!$            growth_mode(n)=3
-!!$          end if
-!!$        end if
-!!$      enddo
-!!$    else
-!!$      do n=1,ag%L
-!!$        if(d_axis_len(1,n)>d_axis_len(2,n)) then
-!!$          growth_mode(n)=2
-!!$        else
-!!$          growth_mode(n)=3
-!!$        end if
-!!$      enddo
-!!$    end if
-!!$
-!!$    call assign_Qpini_v3_vec(Qp,ag,am1,am1,r0,r0,icond2,d_axis_len,growth_mode)
-!!$
-!!$    do n=1,ag%L
-!!$      if(icond1(n)==1.and.(icond2(n)==0.or.am1(n)<gs%binb(1))) then
-!!$        ! assume that the mass reaches to gs%binb(1) quickly over the time step.
-!!$!!c        mod_rat=gs%binb(1)*1.1_PS/am1(n)
-!!$        am1(n)=gs%binb(1)*1.1_PS
-!!$
-!!$!!c        am0(n)=gs(2)%MS(1,n)%mean_mass
-!!$!!c        d_mean_mass(n)=am1(n)-am0(n)
-!!$
-!!$        Qp(iacr,n)=(am1(n)/den_i/coef3s)**(1.0/3.0)
-!!$        Qp(iccr,n)=Qp(iacr,n)
-!!$        Qp(ivcs,n)=coef4pi3*(Qp(iacr,n)**2+Qp(iccr,n)**2)**1.5
-!!$      endif
-!!$    enddo
-!!$
-!!$
-!!$    do n=1,ag%L
-!!$
-!!$      icond2(n)=icond1(n)
-!!$      ni_0(n)=0.0_PS
-!!$
-!!$      if(icond1(n)==1) then
-!!$        if(am1(n)/(coef4pi3*(Qp(iacr,n)**2+Qp(iccr,n)**2)**1.5)<1.0e-3) then
-!!$          ierror(n)=1
-!!$        endif
-!!$        ! maximum possible bulk sphere density of pristine hexagonal crystal
-!!$        den_max=coef3sq3*(Qp(iccr,n)/Qp(iacr,n))*den_i*(1.0-(Qp(idcr,n)/Qp(iacr,n)))/&
-!!$            (coef4pi3*(1.0+(Qp(iccr,n)/Qp(iacr,n))**2)**1.5)
-!!$        if(1.01*den_max<am1(n)/(coef4pi3*(Qp(iacr,n)**2+Qp(iccr,n)**2)**1.5)) then
-!!$          ierror(n)=ierror(n)+2
-!!$
-!!$        endif
-!!$
-!!$        Qp(iacr,n)=Qp(iacr,n)*Qp(iacr,n)*Qp(iacr,n)
-!!$        Qp(iccr,n)=Qp(iccr,n)*Qp(iccr,n)*Qp(iccr,n)
-!!$      endif
-!!$    enddo
-!!$
-!!$    if(any(ierror(1:ag%L)>0)) then
-!!$      do n=1,ag%L
-!!$        if(ierror(n)==1.or.ierror(n)==3) then
-!!$          write(*,*) "dep in> small den",n,am1(n),Qp(iacr,n),Qp(iccr,n),&
-!!$               am1(n)/(coef4pi3*(Qp(iacr,n)**2+Qp(iccr,n)**2)**1.5)
-!!$        elseif(ierror(n)==2.or.ierror(n)==3) then
-!!$          write(*,*) "dep in> large den",n,am1(n),Qp(iacr,n),Qp(iccr,n),&
-!!$               am1(n)/(coef4pi3*(Qp(iacr,n)**2+Qp(iccr,n)**2)**1.5),den_max
-!!$        endif
-!!$      enddo
-!!$    endif
-!!$
-!!$    ! find the ice bin that contain the am1(n).
-!!$    do i=1,gs%N_BIN
-!!$      do n=1,ag%L
-!!$        if(icond2(n)==1) then
-!!$          if(gs%binb(i)<=am1(n).and.am1(n)<gs%binb(i+1)) then
-!!$            IBI(n)=i
-!!$            icond2(n)=0
-!!$          end if
-!!$        end if
-!!$        ! calculate the current number concentration of ice crystals
-!!$        ni_0(n)=ni_0(n)+gs%MS(i,n)%con
-!!$      end do
-!!$    end do
-!!$
-!!$    do n=1,ag%L
-!!$      if(icond1(n)==1) then
-!!$! changed for SHEBA
-!!$! sheba       N_IN = min(get_inact(ag%TV(n)%s_v_n(2)),ga(2)%MS(1,n)%con)
-!!$!         N_IN = min(get_inact(ag%TV(n)%s_v_n(2)),ga(2)%MS(1,n)%con) ! SHEBA CHIARUI
-!!$        N_IN=min(max(get_inact_tropic(ag%TV(n)%s_v_n(2),ag%TV(n)%T_n)-ni_0(n),0.0_PS)  &
-!!$            ,ga(2)%MS(1,n)%con)
-!!$!!!        N_IN=max(0.0_PS,ga(2)%MS(1,n)%con-ni_0(n))
-!!$! end changed for SHEBA
-!!$
-!!$!!c       tend(2) = max( N_IN - gs%MS(1,n)%con, 0.0_PS)/gs%dt
-!!$        tend(2) = max(N_IN,0.0_PS)/gs%dt
-!!$
-!!$        tend(1) = tend(2)*am1(n)
-!!$
-!!$!!c        write(*,*) "dep check",n,N_IN,ga(2)%MS(1,n)%con,ni_0(n)
-!!$        ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!!$        ! put all the nucleated ices into the IBI bin.
-!!$        gs%MS(IBI(n),n)%dmassdt(imt,pro_type)=tend(1)
-!!$        gs%MS(IBI(n),n)%dmassdt(imc,pro_type)=tend(1)
-!!$
-!!$        gs%MS(IBI(n),n)%dcondt(pro_type)=tend(2)
-!!$
-!!$        ! aerosol tendency
-!!$        ga(2)%MS(1,n)%dcondt(pro_type)=-tend(2)
-!!$        ga(2)%MS(1,n)%dmassdt(amt,pro_type)=-tend(2)*ga(2)%MS(1,n)%mean_mass
-!!$      endif
-!!$    enddo
-!!$
-!!$!    do in=1,gs%N_nonmass*ag%L
-!!$!      n=(in-1)/gs%N_nonmass+1
-!!$!      i=in-(n-1)*gs%N_nonmass
-!!$    do n = 1, ag%L
-!!$    do i = 1, gs%N_nonmass
-!!$
-!!$      if(icond1(n)==1) then
-!!$        tend(2)=gs%MS(IBI(n),n)%dcondt(pro_type)
-!!$        gs%MS(IBI(n),n)%dvoldt(i,pro_type)=tend(2)*Qp(i,n)
-!!$      endif
-!!$    enddo
-!!$    enddo
-!!$
-!!$    if(level>=4) then
-!!$      do n=1,ag%L
-!!$        if(icond1(n)==1) then
-!!$          tend(2)=gs%MS(IBI(n),n)%dcondt(pro_type)
-!!$          ga(2)%MS(1,n)%dmassdt(ams,pro_type)= &
-!!$            -tend(2)*ga(2)%MS(1,n)%mean_mass*ga(2)%MS(1,n)%eps_map
-!!$
-!!$
-!!$          ga(2)%MS(1,n)%dmassdt(ami,pro_type)=&
-!!$             ga(2)%MS(1,n)%dmassdt(amt,pro_type)-ga(2)%MS(1,n)%dmassdt(ams,pro_type)
-!!$
-!!$          gs%MS(IBI(n),n)%dmassdt(imat,pro_type)=min(gs%MS(IBI(n),n)%dmassdt(imt,pro_type)&
-!!$             ,real(tend(2)*ga(2)%MS(1,n)%mean_mass,DS))
-!!$
-!!$          gs%MS(IBI(n),n)%dmassdt(imas,pro_type)=min(gs%MS(IBI(n),n)%dmassdt(imat,pro_type)&
-!!$             ,real(tend(2)*ga(2)%MS(1,n)%mean_mass*ga(2)%MS(1,n)%eps_map,DS))
-!!$
-!!$          gs%MS(IBI(n),n)%dmassdt(imai,pro_type)=min(gs%MS(IBI(n),n)%dmassdt(imat,pro_type)&
-!!$             ,gs%MS(IBI(n),n)%dmassdt(imat,pro_type)-gs%MS(IBI(n),n)%dmassdt(imas,pro_type))
-!!$        endif
-!!$      enddo
-!!$    end if
-!!$    ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!!$  end subroutine deposition_mode_vec
+  subroutine deposition_mode_vec(gs,ga,ag,level &
+                                ,vigp,rdsd,ihabit_gm_random)
+    use mod_amps_utility, only: get_growth_mode_hex &
+                         ,cal_growth_mode_hex_inl_vec,random_genvar
+!tmp    use mod_amps_utility, only: get_growth_mode_hex_max
+    ! -----------------------------------------------------------------------------------------
+    ! assume insoluble particles to nucleate.
+    ! -----------------------------------------------------------------------------------------
+    ! solid hydrometeor group
+    type (Group), intent(inout)   :: gs
+    ! aerosol group
+    type (Group), dimension(*)  :: ga
+    ! thermo variable object
+    type (AirGroup), intent(inout)  :: ag
+    ! level of complexity
+    integer, intent(in)           :: level
+
+    !integer :: ID(*),JD(*),KD(*)
+    !
+    ! Inherent Growth parameterization
+    type (vap_igp_aux),intent(in) :: vigp
+    type(random_genvar),intent(inout) :: rdsd
+    ! random generaion: 1, max frequency: 0
+    integer, intent(in)           :: ihabit_gm_random
+
+    ! message from reality-check
+    !integer,dimension(*)   :: mes_rc
+    !integer,intent(in)            :: flagp_a
+
+    ! the nucleated ice mass, and the aerosol mass
+    real(PS),dimension(LMAX) :: am1,am0
+    ! radius of the nucleated ice crystal
+    real(PS),dimension(LMAX) :: r0
+    ! number concentration of existing ice particles
+    real(PS),dimension(LMAX) :: ni_0
+
+    integer,dimension(LMAX) :: IBI
+
+    ! +++++++++++++++++++++++++++++++++++++++++++++++
+    ! tendency of
+    ! (1) mass (g/cm^3)
+    ! (2) concentration (#/cm^3)
+    ! (3) volume (cm^3/cm^3)
+    real(PS), dimension(3)        :: tend
+
+    ! produced concentration of ice nuclei
+    real(PS)                      :: N_IN
+    ! temperature of freezing
+    real(PS), parameter           :: TF = 273.16
+
+    ! change of mass at mean mass point
+    real(PS)                      :: d_mean_mass
+
+    ! inherent growth ratio
+    real(PS),dimension(2,LMAX)            :: gamma
+    real(PS)          :: gamma_d
+    real(PS)     :: ex_vden
+    real(PS)     :: cmod_inh
+
+    integer,dimension(LMAX)            :: growth_mode
+
+    ! non-mass variables of a representative particle in the shifted bin
+    ! argument 1 : volume of circumscribing sphere
+    !          2 : a-axis length
+    !          3 : c-axis length
+    !          4 : d-axis length
+    !          5 : r-axis length
+    !          6 : volume by riming
+    !          7 : volume by aggregation
+    !          8 : semi major axis length
+    !          9 : semi minor axis length
+    real(PS), dimension(mxnnonmc+2,LMAX)             :: Qp
+
+    real(PS), dimension(2,LMAX) :: d_axis_len
+
+    integer,dimension(LMAX)            :: icond1,icond2 &
+                                         ,ierror
+
+    ! random number
+    integer,dimension(LMAX) :: igm
+
+    real(PS),parameter :: mlmt=1.0e-30,nlmt=1.0e-30
+    real(PS) :: phi,den_max
+
+    ! type of process
+    integer                       :: pro_type=7
+
+    !integer    :: em ! not used
+    integer    :: i,n
+
+    ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ! calculate the inherent growth ratio
+    call cal_inherent_growth_ratio_vec(ag,gamma,vigp)
+
+
+    do n=1,ag%L
+! changed for SHEBA simulation
+    if( ( ( ag%TV(n)%T_n <= TF-5.0.and.ag%TV(n)%s_v_n(1) > 0.0_PS) .or.&
+          ( ag%TV(n)%s_v_n(2) >= 0.05_PS.and.ag%TV(n)%T_n < TF )).and.&
+!!c      if( ( (ag%TV(n)%s_v_n(2) >= 0.05_PS).and.(ag%TV(n)%T_n < TF ) ).and.&
+! end changed for SHEBA simulation
+         (ga(2)%MS(1,n)%con>=nlmt.and.ga(2)%MS(1,n)%mass(1)>=mlmt) ) then
+        icond1(n)=1
+      else
+        icond1(n)=0
+      endif
+    enddo
+
+    call cal_growth_mode_hex_inl_vec(igm,1,ag%L,ihabit_gm_random &
+                      ,ag%TV(1:ag%L)%T,ag%TV(1:ag%L)%s_v(2),rdsd)
+
+    do n=1,ag%L
+      d_axis_len(1,n)=0.0
+      d_axis_len(2,n)=0.0
+      ierror(n)=0
+      if(icond1(n)==1.and.ag%TV(n)%s_v_n(2)>0.0_PS) then
+        icond2(n)=1
+
+
+        ! adjust inherent ratio according to the timestep used.
+        !   The timstep adjusted ranges from 20 sec to 0.1 sec.
+        !   The regime T<-20 C is less senstive to the inherent growth since the
+        !   growth is much weaker.
+        if(ag%TV(n)%T-273.16>-20.0_PS) then
+          cmod_inh=get_cmod_inh(gs%dt)
+        else
+          cmod_inh=0.5_PS
+        endif
+        gamma(1,n) = 10.0_PS**(cmod_inh*log10(gamma(1,n)))
+        gamma(2,n) = 10.0_PS**(cmod_inh*log10(gamma(2,n)))
+        ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        ! +++ calculate the excess vapor density +++
+        ex_vden=ag%TV(n)%s_v(2)*ag%TV(n)%e_sat(2)/(R_v*ag%TV(n)%T)
+
+        if(ag%TV(n)%T<=253.16) then
+          if(ag%TV(n)%nuc_gmode/=2.and.ag%TV(n)%nuc_gmode/=3) then
+            gamma_d=gamma(igm(n),n)
+          else
+            gamma_d=gamma(ag%TV(n)%nuc_gmode-1,n)
+          end if
+        else
+          ! NOTE: gamma is set up to be the same in T>-20C for planar and columnar growths.
+          gamma_d=gamma(1,n)
+        end if
+
+        r0(n)=((ga(2)%MS(1,n)%mean_mass/den_i)/3.0_PS/sq_three)**(1.0/3.0)
+
+        am0(n)=ga(2)%MS(1,n)%mean_mass
+
+        d_mean_mass=ga(2)%MS(1,n)%coef(1)*ag%TV(n)%s_v_n(2)*gs%dt
+        am1(n)=am0(n)+d_mean_mass
+
+        call acd_mode(ag%TV(n),r0(n),r0(n)&
+             ,ex_vden &
+             ,gamma_d,1.0_PS,am0(n),d_mean_mass,d_axis_len(1,n))
+
+
+        phi=(r0(n)+d_axis_len(2,n))/(r0(n)+d_axis_len(1,n))
+        den_max=coef3sq3*phi*den_i/(coef4pi3*(1.0+phi**2)**1.5)
+        d_axis_len(1,n)=(am1(n)/den_max/coef4pi3)**(1.0/3.0)/sqrt(1.0+phi**2.0)-r0(n)
+        d_axis_len(2,n)=(r0(n)+d_axis_len(1,n))*phi-r0(n)
+      else
+        icond2(n)=0
+        am1(n)=ga(2)%MS(1,n)%mean_mass
+
+      endif
+    enddo
+
+    if(level==3.or.level==5.or.level==7) then
+      do n=1,ag%L
+        if(ag%TV(n)%T<=253.16) then
+          growth_mode(n)=ag%TV(n)%nuc_gmode
+        else
+          if(d_axis_len(1,n)>d_axis_len(2,n)) then
+            growth_mode(n)=2
+          else
+            growth_mode(n)=3
+          end if
+        end if
+      enddo
+    else
+      do n=1,ag%L
+        if(d_axis_len(1,n)>d_axis_len(2,n)) then
+          growth_mode(n)=2
+        else
+          growth_mode(n)=3
+        end if
+      enddo
+    end if
+
+    call assign_Qpini_v3_vec(Qp,ag,am1,am1,r0,r0,icond2,d_axis_len,growth_mode)
+
+    do n=1,ag%L
+      if(icond1(n)==1.and.(icond2(n)==0.or.am1(n)<gs%binb(1))) then
+        ! assume that the mass reaches to gs%binb(1) quickly over the time step.
+!!c        mod_rat=gs%binb(1)*1.1_PS/am1(n)
+        am1(n)=gs%binb(1)*1.1_PS
+
+!!c        am0(n)=gs(2)%MS(1,n)%mean_mass
+!!c        d_mean_mass(n)=am1(n)-am0(n)
+
+        Qp(iacr,n)=(am1(n)/den_i/coef3s)**(1.0/3.0)
+        Qp(iccr,n)=Qp(iacr,n)
+        Qp(ivcs,n)=coef4pi3*(Qp(iacr,n)**2+Qp(iccr,n)**2)**1.5
+      endif
+    enddo
+
+
+    do n=1,ag%L
+
+      icond2(n)=icond1(n)
+      ni_0(n)=0.0_PS
+
+      if(icond1(n)==1) then
+        if(am1(n)/(coef4pi3*(Qp(iacr,n)**2+Qp(iccr,n)**2)**1.5)<1.0e-3) then
+          ierror(n)=1
+        endif
+        ! maximum possible bulk sphere density of pristine hexagonal crystal
+        den_max=coef3sq3*(Qp(iccr,n)/Qp(iacr,n))*den_i*(1.0-(Qp(idcr,n)/Qp(iacr,n)))/&
+            (coef4pi3*(1.0+(Qp(iccr,n)/Qp(iacr,n))**2)**1.5)
+        if(1.01*den_max<am1(n)/(coef4pi3*(Qp(iacr,n)**2+Qp(iccr,n)**2)**1.5)) then
+          ierror(n)=ierror(n)+2
+
+        endif
+
+        Qp(iacr,n)=Qp(iacr,n)*Qp(iacr,n)*Qp(iacr,n)
+        Qp(iccr,n)=Qp(iccr,n)*Qp(iccr,n)*Qp(iccr,n)
+      endif
+    enddo
+
+    if(any(ierror(1:ag%L)>0)) then
+      do n=1,ag%L
+        if(ierror(n)==1.or.ierror(n)==3) then
+          write(*,*) "dep in> small den",n,am1(n),Qp(iacr,n),Qp(iccr,n),&
+               am1(n)/(coef4pi3*(Qp(iacr,n)**2+Qp(iccr,n)**2)**1.5)
+        elseif(ierror(n)==2.or.ierror(n)==3) then
+          write(*,*) "dep in> large den",n,am1(n),Qp(iacr,n),Qp(iccr,n),&
+               am1(n)/(coef4pi3*(Qp(iacr,n)**2+Qp(iccr,n)**2)**1.5),den_max
+        endif
+      enddo
+    endif
+
+    ! find the ice bin that contain the am1(n).
+    do i=1,gs%N_BIN
+      do n=1,ag%L
+        if(icond2(n)==1) then
+          if(gs%binb(i)<=am1(n).and.am1(n)<gs%binb(i+1)) then
+            IBI(n)=i
+            icond2(n)=0
+          end if
+        end if
+        ! calculate the current number concentration of ice crystals
+        ni_0(n)=ni_0(n)+gs%MS(i,n)%con
+      end do
+    end do
+
+    do n=1,ag%L
+      if(icond1(n)==1) then
+! changed for SHEBA
+! sheba       N_IN = min(get_inact(ag%TV(n)%s_v_n(2)),ga(2)%MS(1,n)%con)
+!         N_IN = min(get_inact(ag%TV(n)%s_v_n(2)),ga(2)%MS(1,n)%con) ! SHEBA CHIARUI
+!        N_IN=min(max(get_inact_tropic(ag%TV(n)%s_v_n(2),ag%TV(n)%T_n)-ni_0(n),0.0_PS)  &
+!            ,ga(2)%MS(1,n)%con)
+        N_IN=max(0.0_PS,ga(2)%MS(1,n)%con-ni_0(n))
+! end changed for SHEBA
+
+!!c       tend(2) = max( N_IN - gs%MS(1,n)%con, 0.0_PS)/gs%dt
+        tend(2) = max(N_IN,0.0_PS)/gs%dt
+
+        tend(1) = tend(2)*am1(n)
+
+!!c        write(*,*) "dep check",n,N_IN,ga(2)%MS(1,n)%con,ni_0(n)
+        ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        ! put all the nucleated ices into the IBI bin.
+        gs%MS(IBI(n),n)%dmassdt(imt,pro_type)=tend(1)
+        gs%MS(IBI(n),n)%dmassdt(imc,pro_type)=tend(1)
+
+        gs%MS(IBI(n),n)%dcondt(pro_type)=tend(2)
+
+        ! aerosol tendency
+        ga(2)%MS(1,n)%dcondt(pro_type)=-tend(2)
+        ga(2)%MS(1,n)%dmassdt(amt,pro_type)=-tend(2)*ga(2)%MS(1,n)%mean_mass
+      endif
+    enddo
+
+!    do in=1,gs%N_nonmass*ag%L
+!      n=(in-1)/gs%N_nonmass+1
+!      i=in-(n-1)*gs%N_nonmass
+    do n = 1, ag%L
+    do i = 1, gs%N_nonmass
+
+      if(icond1(n)==1) then
+        tend(2)=gs%MS(IBI(n),n)%dcondt(pro_type)
+        gs%MS(IBI(n),n)%dvoldt(i,pro_type)=tend(2)*Qp(i,n)
+      endif
+    enddo
+    enddo
+
+    if(level>=4) then
+      do n=1,ag%L
+        if(icond1(n)==1) then
+          tend(2)=gs%MS(IBI(n),n)%dcondt(pro_type)
+          ga(2)%MS(1,n)%dmassdt(ams,pro_type)= &
+            -tend(2)*ga(2)%MS(1,n)%mean_mass*ga(2)%MS(1,n)%eps_map
+
+
+          ga(2)%MS(1,n)%dmassdt(ami,pro_type)=&
+             ga(2)%MS(1,n)%dmassdt(amt,pro_type)-ga(2)%MS(1,n)%dmassdt(ams,pro_type)
+
+          gs%MS(IBI(n),n)%dmassdt(imat,pro_type)=min(gs%MS(IBI(n),n)%dmassdt(imt,pro_type)&
+             ,real(tend(2)*ga(2)%MS(1,n)%mean_mass,DS))
+
+          gs%MS(IBI(n),n)%dmassdt(imas,pro_type)=min(gs%MS(IBI(n),n)%dmassdt(imat,pro_type)&
+             ,real(tend(2)*ga(2)%MS(1,n)%mean_mass*ga(2)%MS(1,n)%eps_map,DS))
+
+          gs%MS(IBI(n),n)%dmassdt(imai,pro_type)=min(gs%MS(IBI(n),n)%dmassdt(imat,pro_type)&
+             ,gs%MS(IBI(n),n)%dmassdt(imat,pro_type)-gs%MS(IBI(n),n)%dmassdt(imas,pro_type))
+        endif
+      enddo
+    end if
+    ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  end subroutine deposition_mode_vec
 
   subroutine acd_mode(th_var,alen,clen,ex_vden&
        ,gamma,fac,mean_mass,d_mean_mass,d_axis_len1,d_axis_len2)
