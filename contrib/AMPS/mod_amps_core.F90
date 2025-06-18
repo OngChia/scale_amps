@@ -3237,7 +3237,7 @@ contains
     ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     ! deposition/sorption nucleation based on Mayer (1992)
     if(iflg_dep/=0) then
-      call deposition_mode_vec(gs,ga,ag,level, &
+      call deposition_mode_vec(gs,ga,ag,level &
                               ,vigp,rdsd,ihabit_gm_random)
     endif
     ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
