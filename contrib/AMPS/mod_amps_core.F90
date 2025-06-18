@@ -17124,7 +17124,8 @@ contains
     ! random number
     integer,dimension(LMAX) :: igm
 
-    real(PS),parameter :: mlmt=1.0e-30,nlmt=1.0e-30
+    !real(PS),parameter :: mlmt=1.0e-30,nlmt=1.0e-30
+    real(PS),parameter :: mlmt=1.0e-19,nlmt=1.0e-19
     real(PS) :: phi,den_max
 
     ! type of process
