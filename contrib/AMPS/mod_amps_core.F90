@@ -20055,7 +20055,7 @@ contains
         ! calculate center of gravity
         call cal_gcord_ice( &
                   init_growth,growth_mode(n) &
-                  ,Qp(iacr,n),Qp(iccr,n),Qp(iag,n),Qp(icg,n),d_axis_len(1,n))
+                  ,Qp(iacr,n),Qp(iccr,n),Qp(iag,n),Qp(icg,n),d_axis_len(1,n),d_axis_len(2,n))
 
 
         ! --- pristine crystals ---
