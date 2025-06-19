@@ -2937,11 +2937,15 @@ contains
           write (AMPS_bin_NAME, "(I2)") i
        endif
        call FILE_HISTORY_in( AMPS_bt(:,:,:,i,1), trim(AMPS_bt_NAME(1))//trim(AMPS_bin_NAME), &
-                             'Bin-wise riming mass rate', 'g /cm3/s ' , fill_halo=.true. )
+                             'Bin-wise riming mass rate', AMPS_t_UNIT(1) , fill_halo=.true. )
        call FILE_HISTORY_in( AMPS_bt(:,:,:,i,2), trim(AMPS_bt_NAME(2))//trim(AMPS_bin_NAME), &
-                             'Bin-wise vapor mass rate', 'g /cm3/s ' , fill_halo=.true. )
+                             'Bin-wise vapor mass rate', AMPS_t_UNIT(1) , fill_halo=.true. )
        call FILE_HISTORY_in( AMPS_bt(:,:,:,i,3), trim(AMPS_bt_NAME(3))//trim(AMPS_bin_NAME), &
-                             'Bin-wise evaporation mass rate', 'g /cm3/s ' , fill_halo=.true. )
+                             'Bin-wise evaporation mass rate', AMPS_t_UNIT(1) , fill_halo=.true. )
+       call FILE_HISTORY_in( AMPS_bt(:,:,:,i,4), trim(AMPS_bt_NAME(4))//trim(AMPS_bin_NAME), &
+                             'Bin-wise collision mass rate', AMPS_t_UNIT(1) , fill_halo=.true. )
+       call FILE_HISTORY_in( AMPS_bt(:,:,:,i,5), trim(AMPS_bt_NAME(5))//trim(AMPS_bin_NAME), &
+                             'Bin-wise collision concentration rate', AMPS_t_UNIT(2) , fill_halo=.true. )
     enddo
 
     do i = 1, ATMOS_PHY_MP_amps_nwaters
