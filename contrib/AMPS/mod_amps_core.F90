@@ -3186,7 +3186,7 @@ contains
 !!$
   subroutine Ice_Nucleation2( gs,gr,ga,ag, level, mes_rc,APSNAME,nu_aps,m_aps&
                  ,iflg_dep,flagp_a,ID,JD,KD &
-                 ,vigp,rdsd,ihabit_gm_random)
+                 ,vigp,rdsd,ihabit_gm_random,frac_dust)
     use class_Group, only: &
        vap_igp_aux
     use mod_amps_utility, only: &
@@ -3221,6 +3221,8 @@ contains
     ! random generaion: 1, max frequency: 0
     integer, intent(in)           :: ihabit_gm_random
 
+    real(PS), intent(in) :: frac_dust
+
 !!c    real (PS)                     :: mass_v, mass_vis
 
     ! flag for nucleation processes
@@ -3237,7 +3239,7 @@ contains
     ! deposition/sorption nucleation based on Mayer (1992)
     if(iflg_dep/=0) then
       call deposition_mode_vec(gs,ga,ag,level &
-                              ,vigp,rdsd,ihabit_gm_random)
+                              ,vigp,rdsd,ihabit_gm_random,frac_dust)
     endif
     ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !!c    do n=1,gs%L
@@ -17042,7 +17044,7 @@ contains
   end subroutine cal_ratio_mass_vd_vec
 
   subroutine deposition_mode_vec(gs,ga,ag,level &
-                                ,vigp,rdsd,ihabit_gm_random)
+                                ,vigp,rdsd,ihabit_gm_random,frac_dust)
     use class_Group, only: &
        vap_igp_aux
     use mod_amps_utility, only: cal_growth_mode_hex_inl_vec,random_genvar,get_cmod_inh
@@ -17066,6 +17068,8 @@ contains
     type(random_genvar),intent(inout) :: rdsd
     ! random generaion: 1, max frequency: 0
     integer, intent(in)           :: ihabit_gm_random
+
+    real(PS), intent(in) :: frac_dust
 
     ! message from reality-check
     !integer,dimension(*)   :: mes_rc
@@ -17307,7 +17311,7 @@ contains
 !         N_IN = min(get_inact(ag%TV(n)%s_v_n(2)),ga(2)%MS(1,n)%con) ! SHEBA CHIARUI
 !        N_IN=min(max(get_inact_tropic(ag%TV(n)%s_v_n(2),ag%TV(n)%T_n)-ni_0(n),0.0_PS)  &
 !            ,ga(2)%MS(1,n)%con)
-        N_IN=max(0.0_PS,ga(2)%MS(1,n)%con-ni_0(n))
+        N_IN=max(0.0_PS,(ga(2)%MS(1,n)%con-ni_0(n))*frac_dust)
 ! end changed for SHEBA
 
 !!c       tend(2) = max( N_IN - gs%MS(1,n)%con, 0.0_PS)/gs%dt

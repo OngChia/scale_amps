@@ -1325,7 +1325,7 @@ CONTAINS
            ,CM%micexfg(13) &
            ,CM%flagp_a  &
            ,ID,JD,KD &
-           ,CM%vigp,CM%rdsd,CM%ihabit_gm_random)
+           ,CM%vigp,CM%rdsd,CM%ihabit_gm_random,CM%frac_dust)
         !write(fid_alog,*) CM%cur_time, "ice2"
         !cptime(17)=cptime(17)+toc(s1,r1)
 !        call PROF_rapend('amps_vapordep',3)
