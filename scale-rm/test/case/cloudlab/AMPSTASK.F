@@ -231,7 +231,7 @@ CCNMAX = 400.0D0
 !
 ! dust fraction
 !
-frac_dust = 0.0004D0
+frac_dust = 0.01D0
 !
 ! minimum dust radius (cm)
 !

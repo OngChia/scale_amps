@@ -73,7 +73,7 @@ module scale_atmos_phy_mp_amps
 
   character(len=H_SHORT), public :: AMPS_mt_NAME(20), & !< name  of the variables
                                     AMPS_ct_NAME(20), & !< name  of the variables
-                                    AMPS_bt_NAME(3)     !< name  of the variables
+                                    AMPS_bt_NAME(5)     !< name  of the variables
 
   data AMPS_mt_NAME / 'ampsl_vapor', 'ampsl_eva', 'ampsl_col', 'ampsl_act', &
                       'ampsl_rim', 'ampsl_melt', 'ampsl_cont', 'ampsl_imm', &
@@ -89,7 +89,7 @@ module scale_atmos_phy_mp_amps
                       'ampsci_rim', 'ampsci_mlsh', 'ampsci_cont', 'ampsci_imm', &
                       'ampsci_homo', 'ampsci_hmproc' /
 
-  data AMPS_bt_NAME / 'riming_bin', 'vapor_bin', 'eva_bin' /
+  data AMPS_bt_NAME / 'riming_bin', 'vapor_bin', 'eva_bin', 'collision_bin', 'collision_conc_bin' /
 
   character(len=H_MID),   public :: AMPS_t_DESC(20) !< desc. of the variables
 
@@ -1311,8 +1311,8 @@ contains
 
     real(RP),dimension(10,2,nzh)        :: dmtendlm, dcontendlm
     real(RP),dimension(10,2,KS-1:KE)    :: dmtendl, dcontendl
-    real(RP),dimension(3,2,mxnbin,nzh)     :: dbintendlm
-    real(RP),dimension(3,2,mxnbin,KS-1:KE) :: dbintendl
+    real(RP),dimension(5,2,mxnbin,nzh)     :: dbintendlm
+    real(RP),dimension(5,2,mxnbin,KS-1:KE) :: dbintendl
 
     real(RP) :: dz1v
     real(RP) :: pgnd
@@ -1346,7 +1346,7 @@ contains
     ! history
     real(RP) :: AMPS_mt(KA,IA,JA,20) ! mass tendency
     real(RP) :: AMPS_ct(KA,IA,JA,20) ! concentration tendency
-    real(RP) :: AMPS_bt(KA,IA,JA,nbr+nbi,3) ! mass tendency
+    real(RP) :: AMPS_bt(KA,IA,JA,nbr+nbi,5) ! mass tendency
     real(RP) :: AMPS_tv(KA,IA,JA,nbr+nbi,2) ! terminal velocity
     character(7) :: AMPS_tv_NAME, AMPS_bin_NAME
     real(RP) :: QLIQ(KA,IA,JA)
@@ -2171,7 +2171,7 @@ contains
                 AMPS_ct(k,i,j,m) = dcontendl(m-10,2,k)
              enddo
           enddo
-          do m = 1, 3 ! bin-wise ice
+          do m = 1, 5 ! bin-wise ice
              do k = KS, KE
                 do ibr = 1, nbr
                    AMPS_bt(k,i,j,ibr,m) = dbintendl(m,1,ibr,k)

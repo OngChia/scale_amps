@@ -3245,6 +3245,16 @@ CONTAINS
                    +CM%rain%MS(i,n)%dmassdt(1,4)&
                    *dvol
 
+             ! aggregation mass
+             dbintendl(4,1,i,n)=dbintendl(4,1,i,n)&
+                   +CM%rain%MS(i,n)%dmassdt(1,2)&
+                   *dvol
+
+             ! aggregation concentration
+             dbintendl(5,1,i,n)=dbintendl(5,1,i,n)&
+                   +CM%rain%MS(i,n)%dcondt(2)&
+                   *dvol
+
              ! vapor deposition
              dmtendl(1,1,n) = dmtendl(1,1,n)&
                    +max(0.0_DS,CM%rain%MS(i,n)%dmassdt(1,1))&
@@ -3380,6 +3390,16 @@ CONTAINS
              ! riming
              dbintendl(1,2,i,n)=dbintendl(1,2,i,n)&
                    +CM%solid_hydro%MS(i,n)%dmassdt(1,4)&
+                   *dvol
+
+             ! aggregation mass
+             dbintendl(4,2,i,n)=dbintendl(4,2,i,n)&
+                   +CM%solid_hydro%MS(i,n)%dmassdt(1,2)&
+                   *dvol
+
+             ! aggregation concentration
+             dbintendl(5,2,i,n)=dbintendl(5,2,i,n)&
+                   +CM%solid_hydro%MS(i,n)%dcondt(2)&
                    *dvol
 
              ish=CM%solid_hydro%IS(i,n)%sh_type
