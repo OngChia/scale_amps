@@ -17141,9 +17141,10 @@ contains
 
     do n=1,ag%L
 ! changed for SHEBA simulation
-    if( ( ( ag%TV(n)%T_n <= TF-5.0.and.ag%TV(n)%s_v_n(1) > 0.0_PS) .or.&
-          ( ag%TV(n)%s_v_n(2) >= 0.05_PS.and.ag%TV(n)%T_n < TF )).and.&
-!!c      if( ( (ag%TV(n)%s_v_n(2) >= 0.05_PS).and.(ag%TV(n)%T_n < TF ) ).and.&
+! sheba!    if( ( ( ag%TV(n)%T_n <= TF-5.0.and.ag%TV(n)%s_v_n(1) > 0.0_PS) .or.&
+! sheba!          ( ag%TV(n)%s_v_n(2) >= 0.05_PS.and.ag%TV(n)%T_n < TF )).and.&
+!      if( ( (ag%TV(n)%s_v_n(2) >= 0.05_PS).and.(ag%TV(n)%T_n < TF ) ).and.&
+      if( ( ag%TV(n)%T_n < TF ) .and.&
 ! end changed for SHEBA simulation
          (ga(2)%MS(1,n)%con>=nlmt.and.ga(2)%MS(1,n)%mass(1)>=mlmt) ) then
         icond1(n)=1
