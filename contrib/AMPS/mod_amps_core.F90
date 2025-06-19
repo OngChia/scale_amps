@@ -19982,104 +19982,110 @@ contains
 
   end function Q_BREAKUP2
 
-!!$  subroutine assign_Qpini_v3_vec(Qp,ag,m_ic,vcs,alen,clen,icond1,d_axis_len,growth_mode)
-!!$    use mod_amps_utility, only: get_len_s3,get_len_s1,get_len_c2a
-!!$    ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!!$    ! calculate the new non-mass variables in the shifted bin for
-!!$    ! vapor deposition process
-!!$    ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!!$    ! thermo variable object
-!!$    type (AirGroup), intent(in)  :: ag
-!!$    integer,dimension(*),intent(in) :: icond1
-!!$    integer,dimension(*),intent(in) :: growth_mode
-!!$    real(PS), dimension(*),intent(in) :: m_ic,vcs,alen,clen
-!!$    ! ratio of mass change in sihfted bin on each axis to total mass
-!!$    real(PS), dimension(2,*),intent(in)       :: d_axis_len
-!!$    real(PS), dimension(mxnnonmc+2,*),intent(inout) :: Qp
-!!$
-!!$    integer :: init_growth,is_mod
-!!$
-!!$    integer                    :: n!,i
-!!$
-!!$    real(PS),parameter :: phi_ros=0.25_PS,phi_s3=0.25_PS,phi_sdpl=0.25_PS
-!!$    ! minimum possible volume of ice crystal
-!!$    real(PS),parameter :: V_csmin=1.1847688e-11
-!!$
-!!$    real(PS) :: phi,semi_a!,phi_cs,semi_c,vice
-!!$
-!!$    init_growth=1
-!!$    is_mod=1
-!!$    do n=1,ag%L
-!!$
-!!$      Qp(ivcs,n)=0.0_PS
-!!$      Qp(iacr,n)=0.0_PS
-!!$      Qp(iccr,n)=0.0_PS
-!!$      Qp(idcr,n)=0.0_PS
-!!$      Qp(iag,n)=0.0_PS
-!!$      Qp(icg,n)=0.0_PS
-!!$      Qp(inex,n)=0.0_PS
-!!$      Qp(mxnnonmc+1,n)=0.0_PS
-!!$      Qp(mxnnonmc+2,n)=0.0_PS
-!!$      if(icond1(n)==1) then
-!!$        ! NOTE: quality component is defined for a partile, not for whole the bin.
-!!$        !
-!!$        ! assumption
-!!$        ! 1. volume of circumscribing sphere is assumed to grow by capacitance calculated
-!!$        !    by the sphere.
-!!$        ! 2. In cases of aggregates or graupel, ice crystals inside do not grow.
-!!$        !
-!!$        Qp(ivcs,n)=vcs(n)
-!!$        Qp(iacr,n)=alen(n)
-!!$        Qp(iccr,n)=clen(n)
-!!$        Qp(idcr,n)=0.0_PS
-!!$        Qp(iag,n)=0.0_PS
-!!$        Qp(icg,n)=0.0_PS
-!!$        Qp(inex,n)=0.0_PS
-!!$        Qp(mxnnonmc+1,n)=alen(n)
-!!$        Qp(mxnnonmc+2,n)=clen(n)
-!!$
-!!$
-!!$        ! calculate number of extra ice crystal
-!!$        call cal_exice(init_growth,growth_mode(n),Qp(inex,n))
-!!$
-!!$
-!!$        Qp(iacr,n)=Qp(iacr,n)+d_axis_len(1,n)
-!!$        Qp(iccr,n)=Qp(iccr,n)+d_axis_len(2,n)
-!!$
-!!$        ! calculate center of gravity
-!!$        call cal_gcord_ice( &
-!!$                  init_growth,growth_mode(n) &
-!!$                  ,Qp(iacr,n),Qp(iccr,n),Qp(iag,n),Qp(icg,n),d_axis_len(1,n))
-!!$
-!!$
-!!$        ! --- pristine crystals ---
-!!$        if(is_mod==1) then
-!!$          select case(growth_mode(n))
-!!$          case(2,3)
-!!$            semi_a=Qp(iacr,n)
-!!$            phi=Qp(iccr,n)/Qp(iacr,n)
-!!$          case(4)
-!!$            semi_a=get_len_c2a(m_ic(n))
-!!$            phi=phi_ros
-!!$          case(1)
-!!$            semi_a=get_len_s3(m_ic(n))
-!!$            phi=phi_s3
-!!$          case default
-!!$            semi_a=get_len_s1(m_ic(n))
-!!$            phi=phi_sdpl
-!!$          end select
-!!$          Qp(ivcs,n)=get_vcs(is_mod,phi,semi_a)
-!!$        else
-!!$          ! ice sphere
-!!$          phi=1.0
-!!$          Qp(ivcs,n)=max(V_csmin,m_ic(n)/den_i)
-!!$        endif
-!!$
-!!$        call cal_semiac_ip(is_mod,phi,Qp(ivcs,n),Qp(mxnnonmc+1,n),Qp(mxnnonmc+2,n))
-!!$      endif
-!!$    enddo
-!!$
-!!$  end subroutine assign_Qpini_v3_vec
+  subroutine assign_Qpini_v3_vec(Qp,ag,m_ic,vcs,alen,clen,icond1,d_axis_len,growth_mode)
+    use class_Ice_Shape, only: &
+       get_vcs, &
+       cal_semiac_ip
+    use mod_amps_utility, only: &
+       get_len_s3, &
+       get_len_s1, &
+       get_len_c2a
+    ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ! calculate the new non-mass variables in the shifted bin for
+    ! vapor deposition process
+    ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ! thermo variable object
+    type (AirGroup), intent(in)  :: ag
+    integer,dimension(*),intent(in) :: icond1
+    integer,dimension(*),intent(in) :: growth_mode
+    real(PS), dimension(*),intent(in) :: m_ic,vcs,alen,clen
+    ! ratio of mass change in sihfted bin on each axis to total mass
+    real(PS), dimension(2,*),intent(in)       :: d_axis_len
+    real(PS), dimension(mxnnonmc+2,*),intent(inout) :: Qp
+
+    integer :: init_growth,is_mod
+
+    integer                    :: n!,i
+
+    real(PS),parameter :: phi_ros=0.25_PS,phi_s3=0.25_PS,phi_sdpl=0.25_PS
+    ! minimum possible volume of ice crystal
+    real(PS),parameter :: V_csmin=1.1847688e-11
+
+    real(PS) :: phi,semi_a!,phi_cs,semi_c,vice
+
+    init_growth=1
+    is_mod=1
+    do n=1,ag%L
+
+      Qp(ivcs,n)=0.0_PS
+      Qp(iacr,n)=0.0_PS
+      Qp(iccr,n)=0.0_PS
+      Qp(idcr,n)=0.0_PS
+      Qp(iag,n)=0.0_PS
+      Qp(icg,n)=0.0_PS
+      Qp(inex,n)=0.0_PS
+      Qp(mxnnonmc+1,n)=0.0_PS
+      Qp(mxnnonmc+2,n)=0.0_PS
+      if(icond1(n)==1) then
+        ! NOTE: quality component is defined for a partile, not for whole the bin.
+        !
+        ! assumption
+        ! 1. volume of circumscribing sphere is assumed to grow by capacitance calculated
+        !    by the sphere.
+        ! 2. In cases of aggregates or graupel, ice crystals inside do not grow.
+        !
+        Qp(ivcs,n)=vcs(n)
+        Qp(iacr,n)=alen(n)
+        Qp(iccr,n)=clen(n)
+        Qp(idcr,n)=0.0_PS
+        Qp(iag,n)=0.0_PS
+        Qp(icg,n)=0.0_PS
+        Qp(inex,n)=0.0_PS
+        Qp(mxnnonmc+1,n)=alen(n)
+        Qp(mxnnonmc+2,n)=clen(n)
+
+
+        ! calculate number of extra ice crystal
+        call cal_exice(init_growth,growth_mode(n),Qp(inex,n))
+
+
+        Qp(iacr,n)=Qp(iacr,n)+d_axis_len(1,n)
+        Qp(iccr,n)=Qp(iccr,n)+d_axis_len(2,n)
+
+        ! calculate center of gravity
+        call cal_gcord_ice( &
+                  init_growth,growth_mode(n) &
+                  ,Qp(iacr,n),Qp(iccr,n),Qp(iag,n),Qp(icg,n),d_axis_len(1,n))
+
+
+        ! --- pristine crystals ---
+        if(is_mod==1) then
+          select case(growth_mode(n))
+          case(2,3)
+            semi_a=Qp(iacr,n)
+            phi=Qp(iccr,n)/Qp(iacr,n)
+          case(4)
+            semi_a=get_len_c2a(m_ic(n))
+            phi=phi_ros
+          case(1)
+            semi_a=get_len_s3(m_ic(n))
+            phi=phi_s3
+          case default
+            semi_a=get_len_s1(m_ic(n))
+            phi=phi_sdpl
+          end select
+          Qp(ivcs,n)=get_vcs(is_mod,phi,semi_a)
+        else
+          ! ice sphere
+          phi=1.0
+          Qp(ivcs,n)=max(V_csmin,m_ic(n)/den_i)
+        endif
+
+        call cal_semiac_ip(is_mod,phi,Qp(ivcs,n),Qp(mxnnonmc+1,n),Qp(mxnnonmc+2,n))
+      endif
+    enddo
+
+  end subroutine assign_Qpini_v3_vec
 
   subroutine cal_exice(init_growth,growth_mode,n_exice)
     !real(PS), intent(in)               :: T,S_max
