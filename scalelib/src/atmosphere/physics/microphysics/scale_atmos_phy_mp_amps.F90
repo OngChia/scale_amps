@@ -1931,16 +1931,16 @@ contains
                    enddo
                 enddo
              enddo
-          else
-             do k = KS, KE
-                do ica = 2, nca
-                   do iba = 1, nba
-                      do ipa = 1, npa-2
-                         qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
-                      enddo
-                   enddo
-                enddo
-             enddo
+         !  else
+         !     do k = KS, KE
+         !        do ica = 2, nca
+         !           do iba = 1, nba
+         !              do ipa = 1, npa-2
+         !                 qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
+         !              enddo
+         !           enddo
+         !        enddo
+         !     enddo
           endif
 
        else
