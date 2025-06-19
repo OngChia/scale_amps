@@ -3232,7 +3232,6 @@ contains
 
     integer :: n
 
-    return
 !!c    write(*,*) "in 1"
     ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     ! deposition/sorption nucleation based on Mayer (1992)
@@ -17144,7 +17143,7 @@ contains
 ! sheba!    if( ( ( ag%TV(n)%T_n <= TF-5.0.and.ag%TV(n)%s_v_n(1) > 0.0_PS) .or.&
 ! sheba!          ( ag%TV(n)%s_v_n(2) >= 0.05_PS.and.ag%TV(n)%T_n < TF )).and.&
 !      if( ( (ag%TV(n)%s_v_n(2) >= 0.05_PS).and.(ag%TV(n)%T_n < TF ) ).and.&
-      if( ( ag%TV(n)%T_n < TF ) .and.&
+      if( ( ag%TV(n)%s_v_n(2) >= 0.0_PS ) .and. ( ag%TV(n)%T_n < TF ) .and. &
 ! end changed for SHEBA simulation
          (ga(2)%MS(1,n)%con>=nlmt.and.ga(2)%MS(1,n)%mass(1)>=mlmt) ) then
         icond1(n)=1
