@@ -487,7 +487,8 @@ contains
          TIME_NOWDATE(6) < RELEASE_INP_TIME_SEC_UPPER_LIMIT &
          ) then
        do k = KS, KE
-         if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < 50.0D0 ) then
+         !if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < 50.0D0 ) then
+         if ( DOMAIN_CZ(k) >= 400.0D0 + CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < 50.0D0 ) then
            LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding', k
            !$omp parallel do OMP_SCHEDULE_ default(none) &
            !$omp private(i, ipa_qpa, ica, iba) &
