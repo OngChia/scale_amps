@@ -1077,7 +1077,7 @@ contains
 
   !-----------------------------------------------------------------------------
   !> Read restart of atmospheric variables
-  subroutine ATMOS_vars_restart_read
+  subroutine ATMOS_vars_restart_read(skip_reading_amps_ice)
     use scale_prc, only: &
        PRC_abort
     use scale_file, only: &
@@ -1121,7 +1121,8 @@ contains
        CPL_sw
     implicit none
 
-    integer  :: i, j, iq
+    logical, intent(in) :: skip_reading_amps_ice
+    integer  :: i, j, iq, imass_substring_index, axis_substring_index, ex_cry_substring_index
     !---------------------------------------------------------------------------
 
     call PROF_rapstart('ATM_Restart', 1)
@@ -1142,8 +1143,18 @@ contains
                                RHOT(:,:,:)                               ) ! [OUT]
 
        do iq = 1, QA
-          call FILE_CARTESC_read( restart_fid, TRACER_NAME(iq), 'ZXY', & ! [IN]
-                                  QTRC(:,:,:,iq)                       ) ! [OUT]
+          if ( skip_reading_amps_ice ) then
+             imass_substring_index = INDEX(TRACER_NAME(iq), 'imass')
+             axis_substring_index = INDEX(TRACER_NAME(iq), 'axis')
+             ex_cry_substring_index = INDEX(TRACER_NAME(iq), 'ex_cry')
+             if ( imass_substring_index <= 0 .or. axis_substring_index <= 0 .or. ex_cry_substring_index <= 0 ) then 
+                call FILE_CARTESC_read( restart_fid, TRACER_NAME(iq), 'ZXY', & ! [IN]
+                                        QTRC(:,:,:,iq)                       ) ! [OUT]
+             endif
+          else
+             call FILE_CARTESC_read( restart_fid, TRACER_NAME(iq), 'ZXY', & ! [IN]
+                                     QTRC(:,:,:,iq)                       ) ! [OUT]
+          endif
        enddo
 
        if ( ATMOS_sw_dyn )    call ATMOS_DYN_vars_restart_read

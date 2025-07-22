@@ -49,6 +49,7 @@ module mod_admin_restart
   logical,                public :: RESTART_OUT_POSTFIX_TIMELABEL = .true.    !< Add timelabel to the basename of output file?
   character(len=H_MID),   public :: RESTART_OUT_TITLE             = ''        !< Title    of the output file
   character(len=H_SHORT), public :: RESTART_OUT_DTYPE             = 'DEFAULT' !< REAL4 or REAL8
+  logical,                public :: RESTART_SKIP_READING_AMPS_ICE = .false.
 
   !-----------------------------------------------------------------------------
 contains
@@ -210,7 +211,8 @@ contains
        RESTART_OUT_AGGREGATE,         &
        RESTART_OUT_POSTFIX_TIMELABEL, &
        RESTART_OUT_TITLE,             &
-       RESTART_OUT_DTYPE
+       RESTART_OUT_DTYPE,             &
+       RESTART_SKIP_READING_AMPS_ICE
 
     integer :: ierr
     !---------------------------------------------------------------------------
@@ -495,7 +497,7 @@ contains
     if ( URBAN_do ) call URBAN_vars_restart_open
 
     ! read restart data
-    if ( ATMOS_do ) call ATMOS_vars_restart_read
+    if ( ATMOS_do ) call ATMOS_vars_restart_read(RESTART_SKIP_READING_AMPS_ICE)
     if ( OCEAN_do ) call OCEAN_vars_restart_read
     if ( LAND_do  ) call LAND_vars_restart_read
     if ( URBAN_do ) call URBAN_vars_restart_read
