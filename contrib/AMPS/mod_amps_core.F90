@@ -17044,7 +17044,7 @@ contains
   end subroutine cal_ratio_mass_vd_vec
 
   subroutine deposition_mode_vec(gs,ga,ag,level &
-                                ,vigp,rdsd,ihabit_gm_random,frac_dust)
+                                ,vigp,rdsd,ihabit_gm_random,frac_dust,nucleation_halflife)
     use class_Group, only: &
        vap_igp_aux
     use mod_amps_utility, only: cal_growth_mode_hex_inl_vec,random_genvar,get_cmod_inh
@@ -17070,6 +17070,7 @@ contains
     integer, intent(in)           :: ihabit_gm_random
 
     real(PS), intent(in) :: frac_dust
+    real(PS), intent(in) :: nucleation_halflife
 
     ! message from reality-check
     !integer,dimension(*)   :: mes_rc
@@ -17311,7 +17312,16 @@ contains
 !         N_IN = min(get_inact(ag%TV(n)%s_v_n(2)),ga(2)%MS(1,n)%con) ! SHEBA CHIARUI
 !        N_IN=min(max(get_inact_tropic(ag%TV(n)%s_v_n(2),ag%TV(n)%T_n)-ni_0(n),0.0_PS)  &
 !            ,ga(2)%MS(1,n)%con)
-        N_IN=max(0.0_PS,(ga(2)%MS(1,n)%con-ni_0(n))*frac_dust)
+        ! cloudlab initial nulceation method N_IN=max(0.0_PS,(ga(2)%MS(1,n)%con-ni_0(n))*frac_dust*gs%dt)
+        ! the above method is not a good method to delay nucleation time
+        !
+        if (nucleation_halflife < 0.0_DS) then
+          N_IN=max(0.0_PS,(ga(2)%MS(1,n)%con-ni_0(n))*frac_dust*gs%dt)
+        else
+          N_IN = min(0.0_PS,-nucleation_halflife * ga(2)%MS(1,n)%con * frac_dust * gs%dt) ! it should not go above zero because Ninp decreases with nucleation
+          N_IN = max(N_IN, -ga(2)%MS(1,n)%con * frac_dust) ! it should not deplete more than existing Ninp that can be activated
+          N_IN = - N_IN ! convert back to positive for ice computation below
+        endif
 ! end changed for SHEBA
 
 !!c       tend(2) = max( N_IN - gs%MS(1,n)%con, 0.0_PS)/gs%dt

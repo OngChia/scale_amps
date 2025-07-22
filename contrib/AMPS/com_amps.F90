@@ -158,6 +158,9 @@ Module com_amps
   real(PS) :: frac_dust=0.01_PS
   real(PS) :: CRIC_RN_IMM=0.25e-4_PS
 
+  ! half life parameter for nucleation2 parameterization
+  real(PS) :: nucleation_halflife
+
   logical :: IsMaster
 
   logical :: debug = .false.

@@ -233,6 +233,10 @@ CCNMAX = 400.0D0
 !
 frac_dust = 0.01D0
 !
+! ice nucleation half life parameter
+!
+nucleation_halflife = 0.0001D0
+!
 ! minimum dust radius (cm)
 !
 CRIC_RN_IMM = 0.25D-4

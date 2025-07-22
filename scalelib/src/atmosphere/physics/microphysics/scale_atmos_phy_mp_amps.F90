@@ -1494,7 +1494,7 @@ contains
                       ,n_snrml,xs_snrml,dx_snrml,y_snrml &
                       ,n_isnrml,xs_isnrml,dx_isnrml,y_isnrml &
                       ,ihabit_gm_random &
-                      ,CCNMAX,CRIC_RN_IMM,frac_dust &
+                      ,CCNMAX,CRIC_RN_IMM,frac_dust,nucleation_halflife &
                       ,nzh)
           enddo
        else

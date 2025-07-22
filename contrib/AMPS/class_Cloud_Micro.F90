@@ -259,7 +259,7 @@ CONTAINS
       ,n_snrml,xs_snrml,dx_snrml,y_snrml &
       ,n_isnrml,xs_isnrml,dx_isnrml,y_isnrml &
       ,ihabit_gm_random &
-      ,CCNMAX,CRIC_RN_IMM,frac_dust &
+      ,CCNMAX,CRIC_RN_IMM,frac_dust,nucleation_halflife &
       ,lbin)
 !!c       lbin) result (CM)
 !!c       binbr,binbi) result (CM)
@@ -303,7 +303,7 @@ CONTAINS
        den_apt(*),den_aps(*),den_api(*),&
        binbr(*),binbi(*),&
        coef_ap(*),eps_ap(*)
-    real(PS), intent(in) :: CCNMAX, CRIC_RN_IMM, frac_dust
+    real(PS), intent(in) :: CCNMAX, CRIC_RN_IMM, frac_dust, nucleation_halflife
 
     ! output format
     character(len=16), intent(in) :: output_format
@@ -464,6 +464,7 @@ CONTAINS
     CM%CCNMAX = CCNMAX
     CM%CRIC_RN_IMM = CRIC_RN_IMM
     CM%frac_dust = frac_dust
+    CM%nucleation_halflife = nucleation_halflife
 
     CM%adrpdrp=make_col_lut(nr_drpdrp,nc_drpdrp,xs_drpdrp,ys_drpdrp &
                            ,dx_drpdrp,dy_drpdrp)

@@ -1390,6 +1390,7 @@ end subroutine cal_growth_mode_hex_inl_vec
          ihabit_gm_random, &
          CCNMAX, &
          frac_dust, &
+         nucleation_halflife, &
          CRIC_RN_IMM
 
         CTL_FID = IO_get_available_fid()
