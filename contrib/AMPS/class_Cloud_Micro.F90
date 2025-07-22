@@ -175,7 +175,7 @@ MODULE class_Cloud_Micro
 ! this is for 80 bins
      real(PS) :: bu_fd(2,62400),bu_tmass(780)
 
-     real(PS) :: CCNMAX, CRIC_RN_IMM, frac_dust
+     real(PS) :: CCNMAX, CRIC_RN_IMM, frac_dust, nucleation_halflife
 
      ! aerosol variables
      real(PS),dimension(4) :: nu_aps,phi_aps,m_aps,ap_lnsig,ap_mean &
