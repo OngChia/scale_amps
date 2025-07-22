@@ -3186,7 +3186,7 @@ contains
 !!$
   subroutine Ice_Nucleation2( gs,gr,ga,ag, level, mes_rc,APSNAME,nu_aps,m_aps&
                  ,iflg_dep,flagp_a,ID,JD,KD &
-                 ,vigp,rdsd,ihabit_gm_random,frac_dust)
+                 ,vigp,rdsd,ihabit_gm_random,frac_dust,nucleation_halflife)
     use class_Group, only: &
        vap_igp_aux
     use mod_amps_utility, only: &
@@ -3221,7 +3221,7 @@ contains
     ! random generaion: 1, max frequency: 0
     integer, intent(in)           :: ihabit_gm_random
 
-    real(PS), intent(in) :: frac_dust
+    real(PS), intent(in) :: frac_dust, nucleation_halflife
 
 !!c    real (PS)                     :: mass_v, mass_vis
 
@@ -3239,7 +3239,7 @@ contains
     ! deposition/sorption nucleation based on Mayer (1992)
     if(iflg_dep/=0) then
       call deposition_mode_vec(gs,ga,ag,level &
-                              ,vigp,rdsd,ihabit_gm_random,frac_dust)
+                              ,vigp,rdsd,ihabit_gm_random,frac_dust,nucleation_halflife)
     endif
     ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !!c    do n=1,gs%L
