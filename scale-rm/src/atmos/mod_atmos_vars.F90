@@ -1143,10 +1143,12 @@ contains
                                RHOT(:,:,:)                               ) ! [OUT]
 
        do iq = 1, QA
+          LOG_INFO("ATMOS_vars_restart_read debug",*) '1: ', iq, skip_reading_amps_ice
           if ( skip_reading_amps_ice ) then
              imass_substring_index = INDEX(TRACER_NAME(iq), 'imass')
              axis_substring_index = INDEX(TRACER_NAME(iq), 'axis')
              ex_cry_substring_index = INDEX(TRACER_NAME(iq), 'ex_cry')
+             LOG_INFO("ATMOS_vars_restart_read debug",*) '2: ', imass_substring_index, axis_substring_index, ex_cry_substring_index
              if ( imass_substring_index <= 0 .or. axis_substring_index <= 0 .or. ex_cry_substring_index <= 0 ) then 
                 call FILE_CARTESC_read( restart_fid, TRACER_NAME(iq), 'ZXY', & ! [IN]
                                         QTRC(:,:,:,iq)                       ) ! [OUT]
