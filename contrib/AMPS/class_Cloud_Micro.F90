@@ -830,7 +830,7 @@ CONTAINS
     integer :: ID(*),JD(*),KD(*)
     real(MP_KIND)    :: qtp(*),thil(*)
     integer,intent(in) :: iproc,istrt,LL
-    real(MP_KIND), intent(inout) :: dmtendl(10,2,LL), dcontendl(10,2,LL), dbintendl(3,2,mxnbin,LL)
+    real(MP_KIND), intent(inout) :: dmtendl(10,2,LL), dcontendl(10,2,LL), dbintendl(7,2,mxnbin,LL)
 ! <<< 2014/10 T. Hashino added for KiD
     real(PS), dimension(LMAX) :: &
                   dM_auto_liq,dM_accr_liq &
@@ -3172,7 +3172,7 @@ CONTAINS
 
     real(MP_KIND),    intent(inout) :: dmtendl(10,2,L)
     real(MP_KIND),    intent(inout) :: dcontendl(10,2,L)
-    real(MP_KIND),    intent(inout) :: dbintendl(5,2,mxnbin,L)
+    real(MP_KIND),    intent(inout) :: dbintendl(7,2,mxnbin,L)
 
     integer :: n,i,j,ish
     real(PS) :: dvol,dcon(9),tconl(9),tmassl(9)
@@ -3254,6 +3254,16 @@ CONTAINS
              ! aggregation concentration
              dbintendl(5,1,i,n)=dbintendl(5,1,i,n)&
                    +CM%rain%MS(i,n)%dcondt(2)&
+                   *dvol
+
+             ! freezing mass rate
+             dbintendl(6,1,i,n)=dbintendl(6,1,i,n)&
+                   +CM%rain%MS(i,n)%dmassdt(1,7)&
+                   *dvol
+
+             ! freezing conc rate
+             dbintendl(7,1,i,n)=dbintendl(7,1,i,n)&
+                   +CM%rain%MS(i,n)%dcondt(7)&
                    *dvol
 
              ! vapor deposition
@@ -3401,6 +3411,16 @@ CONTAINS
              ! aggregation concentration
              dbintendl(5,2,i,n)=dbintendl(5,2,i,n)&
                    +CM%solid_hydro%MS(i,n)%dcondt(2)&
+                   *dvol
+
+             ! freezing mass rate
+             dbintendl(6,2,i,n)=dbintendl(6,2,i,n)&
+                   +CM%solid_hydro%MS(i,n)%dmassdt(1,7)&
+                   *dvol
+
+             ! freezing conc rate
+             dbintendl(7,2,i,n)=dbintendl(7,2,i,n)&
+                   +CM%solid_hydro%MS(i,n)%dcondt(7)&
                    *dvol
 
              ish=CM%solid_hydro%IS(i,n)%sh_type

@@ -73,7 +73,7 @@ module scale_atmos_phy_mp_amps
 
   character(len=H_SHORT), public :: AMPS_mt_NAME(20), & !< name  of the variables
                                     AMPS_ct_NAME(20), & !< name  of the variables
-                                    AMPS_bt_NAME(5)     !< name  of the variables
+                                    AMPS_bt_NAME(7)     !< name  of the variables
 
   data AMPS_mt_NAME / 'ampsl_vapor', 'ampsl_eva', 'ampsl_col', 'ampsl_act', &
                       'ampsl_rim', 'ampsl_melt', 'ampsl_cont', 'ampsl_imm', &
@@ -89,7 +89,7 @@ module scale_atmos_phy_mp_amps
                       'ampsci_rim', 'ampsci_mlsh', 'ampsci_cont', 'ampsci_imm', &
                       'ampsci_homo', 'ampsci_hmproc' /
 
-  data AMPS_bt_NAME / 'riming_bin', 'vapor_bin', 'eva_bin', 'collision_bin', 'collision_conc_bin' /
+  data AMPS_bt_NAME / 'riming_bin', 'vapor_bin', 'eva_bin', 'collision_bin', 'collision_conc_bin', 'freezing_bin', 'freezing_conc_bin' /
 
   character(len=H_MID),   public :: AMPS_t_DESC(20) !< desc. of the variables
 
@@ -1346,7 +1346,7 @@ contains
     ! history
     real(RP) :: AMPS_mt(KA,IA,JA,20) ! mass tendency
     real(RP) :: AMPS_ct(KA,IA,JA,20) ! concentration tendency
-    real(RP) :: AMPS_bt(KA,IA,JA,nbr+nbi,5) ! mass tendency
+    real(RP) :: AMPS_bt(KA,IA,JA,nbr+nbi,7) ! mass tendency
     real(RP) :: AMPS_tv(KA,IA,JA,nbr+nbi,2) ! terminal velocity
     character(7) :: AMPS_tv_NAME, AMPS_bin_NAME
     real(RP) :: QLIQ(KA,IA,JA)
@@ -2171,7 +2171,7 @@ contains
                 AMPS_ct(k,i,j,m) = dcontendl(m-10,2,k)
              enddo
           enddo
-          do m = 1, 5 ! bin-wise ice
+          do m = 1, 7 ! bin-wise ice
              do k = KS, KE
                 do ibr = 1, nbr
                    AMPS_bt(k,i,j,ibr,m) = dbintendl(m,1,ibr,k)
@@ -2946,6 +2946,10 @@ contains
                              'Bin-wise collision mass rate', AMPS_t_UNIT(1) , fill_halo=.true. )
        call FILE_HISTORY_in( AMPS_bt(:,:,:,i,5), trim(AMPS_bt_NAME(5))//trim(AMPS_bin_NAME), &
                              'Bin-wise collision concentration rate', AMPS_t_UNIT(2) , fill_halo=.true. )
+       call FILE_HISTORY_in( AMPS_bt(:,:,:,i,6), trim(AMPS_bt_NAME(6))//trim(AMPS_bin_NAME), &
+                             'Bin-wise freezing mass rate', AMPS_t_UNIT(1) , fill_halo=.true. )
+       call FILE_HISTORY_in( AMPS_bt(:,:,:,i,7), trim(AMPS_bt_NAME(7))//trim(AMPS_bin_NAME), &
+                             'Bin-wise freezing concentration rate', AMPS_t_UNIT(2) , fill_halo=.true. )
     enddo
 
     do i = 1, ATMOS_PHY_MP_amps_nwaters
