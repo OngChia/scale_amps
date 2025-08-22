@@ -62,6 +62,7 @@ module mod_user
   
   logical :: DO_CLOUD_SEEDING = .false.
   real(RP) :: RELEASE_INP_CONC_TIME_RATE = 0.0_RP
+  real(RP) :: RELEASE_INP_Z_LOWER_LIMIT = 0.0_RP
   real(RP) :: RELEASE_INP_X_LOWER_LIMIT = 0.0_RP
   real(RP) :: RELEASE_INP_X_UPPER_LIMIT = 0.0_RP
   integer :: RELEASE_INP_TIME_HOUR_LOWER_LIMIT = 0
@@ -169,6 +170,7 @@ contains
        SWITCH_RHOQ, &
        DO_CLOUD_SEEDING, &
        RELEASE_INP_CONC_TIME_RATE, &
+       RELEASE_INP_Z_LOWER_LIMIT, &
        RELEASE_INP_X_LOWER_LIMIT, &
        RELEASE_INP_X_UPPER_LIMIT, &
        RELEASE_INP_TIME_HOUR_LOWER_LIMIT, &
@@ -488,7 +490,7 @@ contains
          ) then
        do k = KS, KE
          !if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < 50.0D0 ) then
-         if ( DOMAIN_CZ(k) >= 400.0D0 + CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < 50.0D0 ) then
+         if ( DOMAIN_CZ(k) >= RELEASE_INP_Z_LOWER_LIMIT + CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < 50.0D0 ) then
            LOG_PROGRESS(*) 'atmosphere / user / cloud_seeding', k
            !$omp parallel do OMP_SCHEDULE_ default(none) &
            !$omp private(i, ipa_qpa, ica, iba) &
