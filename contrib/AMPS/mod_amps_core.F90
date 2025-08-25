@@ -17322,8 +17322,8 @@ contains
         else
           ICE_FF = -0.97_DS / ( 1.0_DS + exp(-0.88_DS * (ag%TV(n)%T_n - 263.95_DS)) ) + 0.97_DS ! Nadja's INP fraction
           ICE_FF = max(0.0_DS, ga(2)%MS(1,n)%con * ICE_FF) ! make sure it is above zero
-          N_IN = min(0.0_DS,-nucleation_halflife * (ICE_FF - ni_0(n)) * gs%dt) ! it should not go above zero because Ninp decreases with nucleation
-          N_IN = max(N_IN, -ICE_FF) ! it should not deplete more than existing Ninp that can be activated
+          N_IN = min(0.0_DS,-nucleation_halflife * ICE_FF * gs%dt) ! it should not go above zero because Ninp decreases with nucleation
+          N_IN = min(max(N_IN, -(ICE_FF - ni_0(n))), 0.0_DS) ! it should not deplete more than existing Ninp - Nice that can be activated
           N_IN = - N_IN ! convert back to positive for ice computation below
         endif
 ! end changed for SHEBA
