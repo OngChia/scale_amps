@@ -1311,8 +1311,8 @@ contains
 
     real(RP),dimension(10,2,nzh)        :: dmtendlm, dcontendlm
     real(RP),dimension(10,2,KS-1:KE)    :: dmtendl, dcontendl
-    real(RP),dimension(5,2,mxnbin,nzh)     :: dbintendlm
-    real(RP),dimension(5,2,mxnbin,KS-1:KE) :: dbintendl
+    real(RP),dimension(7,2,mxnbin,nzh)     :: dbintendlm
+    real(RP),dimension(7,2,mxnbin,KS-1:KE) :: dbintendl
 
     real(RP) :: dz1v
     real(RP) :: pgnd
