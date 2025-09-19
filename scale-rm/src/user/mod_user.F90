@@ -426,7 +426,7 @@ contains
     use scale_atmos_grid_cartesC, only: &
        GLOBAL_DOMAIN_CX => ATMOS_GRID_CARTESC_CXG, &
        GLOBAL_DOMAIN_CY => ATMOS_GRID_CARTESC_CYG, &
-       GLOBAL_DOMAIN_CDY => ATMOS_GRID_CARTESC_CDYG
+       GLOBAL_DOMAIN_CDY => ATMOS_GRID_CARTESC_CDYG, &
        DOMAIN_CZ => ATMOS_GRID_CARTESC_CZ
     use scale_atmos_phy_mp_amps, only: &
        nca, &
