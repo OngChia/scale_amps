@@ -71,6 +71,8 @@ module mod_user
   integer :: RELEASE_INP_TIME_MIN_UPPER_LIMIT = 0
   integer :: RELEASE_INP_TIME_SEC_LOWER_LIMIT = 0
   integer :: RELEASE_INP_TIME_SEC_UPPER_LIMIT = 0
+  integer :: TIME_INP_LOWER_SECOND = 0
+  integer :: TIME_INP_UPPER_SECOND = 0
 
   real(RP), allocatable :: largeScaleTTendency(:) ! large-scale temperature forcing
   real(RP), allocatable :: largeScaleQTendency(:) ! large-scale vapor forcing
@@ -198,6 +200,9 @@ contains
 
     LOG_NEWLINE
     LOG_INFO("USER_setup",*) 'This module is dummy.'
+
+    TIME_INP_LOWER_SECOND = RELEASE_INP_TIME_HOUR_LOWER_LIMIT * 3600 + RELEASE_INP_TIME_MIN_LOWER_LIMIT * 60 + RELEASE_INP_TIME_SEC_LOWER_LIMIT
+    TIME_INP_UPPER_SECOND = RELEASE_INP_TIME_HOUR_UPPER_LIMIT * 3600 + RELEASE_INP_TIME_MIN_UPPER_LIMIT * 60 + RELEASE_INP_TIME_SEC_UPPER_LIMIT
 
     ! initialization of local arrays
     allocate(largeScaleTTendency(KA),largeScaleQTendency(KA),WLS(KA))
@@ -457,7 +462,7 @@ contains
     real(RP) :: SINK_DUP, SINK_UP, SINK_CEN
 
 
-    integer  :: k, i, j, iq, ipa_qpa, ica, iba
+    integer  :: k, i, j, iq, ipa_qpa, ica, iba, time_now_second
 
     if ( .not. USER_do ) then
        return
@@ -481,14 +486,11 @@ contains
     ! Perform drone cloud seeding. We only spread INP on the first row in J direction between x=[800, 1200] (m) assuming that size of the domain in I direction is 2 km.
     ! The height of cloud seeding is at 500 m according to the BAMS paper.
     ! Cloud seeding only happens after 1 hour into the simulation at 1800 for 2 min assuming the model correctly spins up after 1 hour.
+    time_now_second = TIME_NOWDATE(4) * 3600 + TIME_NOWDATE(5) * 60 + TIME_NOWDATE(6)
     if ( DO_CLOUD_SEEDING .and. &
-         TIME_NOWDATE(4) >= RELEASE_INP_TIME_HOUR_LOWER_LIMIT .and. &
-         TIME_NOWDATE(5) >= RELEASE_INP_TIME_MIN_LOWER_LIMIT .and. &
-         TIME_NOWDATE(6) >= RELEASE_INP_TIME_SEC_LOWER_LIMIT .and. &
-         TIME_NOWDATE(4) < RELEASE_INP_TIME_HOUR_UPPER_LIMIT .and. &
-         TIME_NOWDATE(5) < RELEASE_INP_TIME_MIN_UPPER_LIMIT .and. &
-         TIME_NOWDATE(6) < RELEASE_INP_TIME_SEC_UPPER_LIMIT &
-         ) then
+         time_now_second >= TIME_INP_LOWER_SECOND .and. &
+         time_now_second < TIME_INP_UPPER_SECOND .and. &
+      ) then
        do k = KS, KE
          !if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < 50.0D0 ) then
          if ( DOMAIN_CZ(k) >= RELEASE_INP_Z_LOWER_LIMIT + CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < GLOBAL_DOMAIN_CDY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) ) then
