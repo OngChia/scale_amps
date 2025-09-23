@@ -489,8 +489,8 @@ contains
     time_now_second = TIME_NOWDATE(4) * 3600 + TIME_NOWDATE(5) * 60 + TIME_NOWDATE(6)
     if ( DO_CLOUD_SEEDING .and. &
          time_now_second >= TIME_INP_LOWER_SECOND .and. &
-         time_now_second < TIME_INP_UPPER_SECOND .and. &
-      ) then
+         time_now_second < TIME_INP_UPPER_SECOND &
+       ) then
        do k = KS, KE
          !if ( DOMAIN_CZ(k) >= 500.0D0 - CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < 50.0D0 ) then
          if ( DOMAIN_CZ(k) >= RELEASE_INP_Z_LOWER_LIMIT + CONST_EPS .and. GLOBAL_DOMAIN_CY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) < GLOBAL_DOMAIN_CDY(PRC_2Drank(PRC_myrank, 2)*(JE - JS + 1) + JS) ) then
