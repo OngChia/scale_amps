@@ -274,201 +274,201 @@ contains
     sd_numasl_tmp = sd_numasl
 
     !### Setup aerosol related parameters
-    if( abs(mod(sdm_aslset,10))==1 ) then
+!     if( abs(mod(sdm_aslset,10))==1 ) then
 
-       !### numasl=1 @ init+rest : (NH4)2SO4 ###!
+!        !### numasl=1 @ init+rest : (NH4)2SO4 ###!
 
-       sd_aslmw(1)  = mass_amsul
-       sd_aslion(1) = ion_amsul
+!        sd_aslmw(1)  = mass_amsul
+!        sd_aslion(1) = ion_amsul
 
-    else if( abs(mod(sdm_aslset,10))==2 ) then
+!     else if( abs(mod(sdm_aslset,10))==2 ) then
 
-       if( abs(sdm_aslset)==2 ) then
+!        if( abs(sdm_aslset)==2 ) then
 
-          !### numasl=1 @ init : NaCl ###!
+!           !### numasl=1 @ init : NaCl ###!
 
-          sd_aslmw(1)  = mass_nacl
-          sd_aslion(1) = ion_nacl
+!           sd_aslmw(1)  = mass_nacl
+!           sd_aslion(1) = ion_nacl
 
-       else if( abs(sdm_aslset)==12 ) then
+!        else if( abs(sdm_aslset)==12 ) then
 
-          !### numasl=2 @ init : NaCl, rest : (NH4)2SO4 ###!
+!           !### numasl=2 @ init : NaCl, rest : (NH4)2SO4 ###!
 
-          sd_aslmw(1) = mass_amsul
-          sd_aslmw(2) = mass_nacl
-          sd_aslion(1) = ion_amsul
-          sd_aslion(2) = ion_nacl
+!           sd_aslmw(1) = mass_amsul
+!           sd_aslmw(2) = mass_nacl
+!           sd_aslion(1) = ion_amsul
+!           sd_aslion(2) = ion_nacl
 
-       end if
+!        end if
 
-    else if( abs(mod(sdm_aslset,10))==3 ) then
+!     else if( abs(mod(sdm_aslset,10))==3 ) then
 
-       !### numasl>=2 @ init+rest : (NH4)2SO4, NaCl, ... ###!
+!        !### numasl>=2 @ init+rest : (NH4)2SO4, NaCl, ... ###!
 
-       sd_aslmw(1) = mass_amsul
-       sd_aslmw(2) = mass_nacl
+!        sd_aslmw(1) = mass_amsul
+!        sd_aslmw(2) = mass_nacl
 
-       sd_aslion(1) = ion_amsul
-       sd_aslion(2) = ion_nacl
+!        sd_aslion(1) = ion_amsul
+!        sd_aslion(2) = ion_nacl
 
-       !! Must be a Bug. This cannot be simply commented out
-       do n=1,20
-       !            call getrname( id_sdm_aslmw  + (n-1), sd_aslmw(n+2)  )
-       !            call getrname( id_sdm_aslion + (n-1), sd_aslion(n+2) )
-       end do
+!        !! Must be a Bug. This cannot be simply commented out
+!        do n=1,20
+!        !            call getrname( id_sdm_aslmw  + (n-1), sd_aslmw(n+2)  )
+!        !            call getrname( id_sdm_aslion + (n-1), sd_aslion(n+2) )
+!        end do
 
-    else if( abs(mod(sdm_aslset,10))==5 ) then
+!     else if( abs(mod(sdm_aslset,10))==5 ) then
 
-       !### numasl=1 @ init+rest : (NH4)HSO4 ###!
+!        !### numasl=1 @ init+rest : (NH4)HSO4 ###!
 
-       sd_aslmw(1)  = mass_amsul
-       sd_aslion(1) = ion_amsul
+!        sd_aslmw(1)  = mass_amsul
+!        sd_aslion(1) = ion_amsul
 
-    end if
+!     end if
 
-    do n=1,22
+!     do n=1,22
 
-       if( n<=sd_numasl ) then
-          idx_nasl(n) = n
-          dmask(n) = 1.0_RP
-       else
-          idx_nasl(n) = sd_numasl
-          dmask(n) = 0.0_RP
-       end if
+!        if( n<=sd_numasl ) then
+!           idx_nasl(n) = n
+!           dmask(n) = 1.0_RP
+!        else
+!           idx_nasl(n) = sd_numasl
+!           dmask(n) = 0.0_RP
+!        end if
 
-    end do
+!     end do
 
 
-    ! Get index list of the selected SDs
-    cnt = 0
-    if(sdtype == 'all') then
-       do n=1,sd_num
-          cnt = cnt + 1
-          ilist(cnt) = n
-       end do
+!     ! Get index list of the selected SDs
+!     cnt = 0
+!     if(sdtype == 'all') then
+!        do n=1,sd_num
+!           cnt = cnt + 1
+!           ilist(cnt) = n
+!        end do
 
-    else if (sdtype == 'large') then
-       sd_thld_radi = 1.0e-6_RP ! threshold radius [m]
-       do n=1,sd_num
-          if( sd_rk(n)<VALID2INVALID ) cycle
+!     else if (sdtype == 'large') then
+!        sd_thld_radi = 1.0e-6_RP ! threshold radius [m]
+!        do n=1,sd_num
+!           if( sd_rk(n)<VALID2INVALID ) cycle
 
-          if( sd_liqice(n) == STAT_LIQ ) then
-             if( sd_r(n)>sd_thld_radi ) then
-                cnt = cnt + 1
-                ilist(cnt) = n
-             end if
+!           if( sd_liqice(n) == STAT_LIQ ) then
+!              if( sd_r(n)>sd_thld_radi ) then
+!                 cnt = cnt + 1
+!                 ilist(cnt) = n
+!              end if
 
-          else if( sdm_cold .and. (sd_liqice(n) == STAT_ICE)) then
-             if( (sdi%re(n)>sd_thld_radi) .or. (sdi%rp(n)>sd_thld_radi) ) then
-                cnt = cnt + 1
-                ilist(cnt) = n
-             end if
-          end if
-       end do
+!           else if( sdm_cold .and. (sd_liqice(n) == STAT_ICE)) then
+!              if( (sdi%re(n)>sd_thld_radi) .or. (sdi%rp(n)>sd_thld_radi) ) then
+!                 cnt = cnt + 1
+!                 ilist(cnt) = n
+!              end if
+!           end if
+!        end do
 
-    else if (sdtype == 'activated') then
-       do n=1,sd_num
-          if( sd_rk(n)<VALID2INVALID ) cycle
+!     else if (sdtype == 'activated') then
+!        do n=1,sd_num
+!           if( sd_rk(n)<VALID2INVALID ) cycle
 
-          if( sd_liqice(n) == STAT_LIQ ) then
-             !! calculate the coefficient a of Kohler curve
-             i = floor(sd_ri(n))+1
-             j = floor(sd_rj(n))+1
-             k = floor(sd_rk(n))+1
+!           if( sd_liqice(n) == STAT_LIQ ) then
+!              !! calculate the coefficient a of Kohler curve
+!              i = floor(sd_ri(n))+1
+!              j = floor(sd_rj(n))+1
+!              k = floor(sd_rk(n))+1
 
-             t_sd  = TEMP0(k,i,j)
+!              t_sd  = TEMP0(k,i,j)
 
-             ivt_sd = 1.0_RP / t_sd
-             coef_a  = CurveF * ivt_sd
+!              ivt_sd = 1.0_RP / t_sd
+!              coef_a  = CurveF * ivt_sd
 
-             !! calculate the coefficient b of Kohler curve
-             coef_b = 0.0_RP
+!              !! calculate the coefficient b of Kohler curve
+!              coef_b = 0.0_RP
 
-!OCL UNROLL('full'),NOSWP  
-             do t=1,22
+! !OCL UNROLL('full'),NOSWP  
+!              do t=1,22
 
-                s = idx_nasl(t)
+!                 s = idx_nasl(t)
 
-                dtmp = sd_asl(n,s) * (real(sd_aslion(s),kind=RP)            &
-                     / real(sd_aslmw(s),kind=RP))
-                coef_b = coef_b + dmask(t) * dtmp
+!                 dtmp = sd_asl(n,s) * (real(sd_aslion(s),kind=RP)            &
+!                      / real(sd_aslmw(s),kind=RP))
+!                 coef_b = coef_b + dmask(t) * dtmp
                 
-             end do
+!              end do
 
-             coef_b = coef_b * ASL_FF
+!              coef_b = coef_b * ASL_FF
 
-             !! calculate critical radius
-             sd_thld_radi = sqrt(3.0_RP*coef_b/coef_a)
+!              !! calculate critical radius
+!              sd_thld_radi = sqrt(3.0_RP*coef_b/coef_a)
 
-             if( sd_r(n)>sd_thld_radi ) then
-                cnt = cnt + 1
-                ilist(cnt) = n
-             end if
+!              if( sd_r(n)>sd_thld_radi ) then
+!                 cnt = cnt + 1
+!                 ilist(cnt) = n
+!              end if
 
-          else if( sdm_cold .and. (sd_liqice(n) == STAT_ICE)) then
-             sd_thld_radi = 1.0e-6_RP ! threshold radius [m]
-             if( (sdi%re(n)>sd_thld_radi) .or. (sdi%rp(n)>sd_thld_radi) ) then
-                cnt = cnt + 1
-                ilist(cnt) = n
-             end if
-          end if
-       end do
+!           else if( sdm_cold .and. (sd_liqice(n) == STAT_ICE)) then
+!              sd_thld_radi = 1.0e-6_RP ! threshold radius [m]
+!              if( (sdi%re(n)>sd_thld_radi) .or. (sdi%rp(n)>sd_thld_radi) ) then
+!                 cnt = cnt + 1
+!                 ilist(cnt) = n
+!              end if
+!           end if
+!        end do
 
-    else
-       ! stop if unsupported sdtype option is specified
-       LOG_ERROR("sdm_copy_selected_sd",*) "Unsupported sdtype option is specified"
-       call PRC_abort
+!     else
+!        ! stop if unsupported sdtype option is specified
+!        LOG_ERROR("sdm_copy_selected_sd",*) "Unsupported sdtype option is specified"
+!        call PRC_abort
 
-    end if
-    sd_num_tmp = cnt
+!     end if
+!     sd_num_tmp = cnt
 
-    ! Copy data of the selcted SDs
-    if(sd_num_tmp /= 0) then
-       !$omp parallel
-       !$omp do simd private(n) schedule(static,256) 
-       do m=1,sd_num_tmp
-          n = ilist(m)
+!     ! Copy data of the selcted SDs
+!     if(sd_num_tmp /= 0) then
+!        !$omp parallel
+!        !$omp do simd private(n) schedule(static,256) 
+!        do m=1,sd_num_tmp
+!           n = ilist(m)
        
-          sd_n_tmp(m)      = sd_n(n)
-          sd_x_tmp(m)      = sd_x(n)
-          sd_y_tmp(m)      = sd_y(n)
-          sd_ri_tmp(m)     = sd_ri(n)
-          sd_rj_tmp(m)     = sd_rj(n)
-          sd_rk_tmp(m)     = sd_rk(n)
-          sd_liqice_tmp(m) = sd_liqice(n)
-          sd_r_tmp(m)      = sd_r(n)
+!           sd_n_tmp(m)      = sd_n(n)
+!           sd_x_tmp(m)      = sd_x(n)
+!           sd_y_tmp(m)      = sd_y(n)
+!           sd_ri_tmp(m)     = sd_ri(n)
+!           sd_rj_tmp(m)     = sd_rj(n)
+!           sd_rk_tmp(m)     = sd_rk(n)
+!           sd_liqice_tmp(m) = sd_liqice(n)
+!           sd_r_tmp(m)      = sd_r(n)
 
-       end do
-       !$omp end do simd
+!        end do
+!        !$omp end do simd
 
-       do k=1,sd_numasl_tmp
-          !$omp do simd private(n) schedule(static,256) 
-          do m=1,sd_num_tmp
-             n = ilist(m)
+!        do k=1,sd_numasl_tmp
+!           !$omp do simd private(n) schedule(static,256) 
+!           do m=1,sd_num_tmp
+!              n = ilist(m)
 
-             sd_asl_tmp(m,k) = sd_asl(n,k)
+!              sd_asl_tmp(m,k) = sd_asl(n,k)
 
-          end do
-          !$omp end do simd
-       end do
+!           end do
+!           !$omp end do simd
+!        end do
 
-       if( sdm_cold ) then
-          !$omp do simd private(n) schedule(static,256) 
-          do m=1,sd_num_tmp
-             n = ilist(m)
+!        if( sdm_cold ) then
+!           !$omp do simd private(n) schedule(static,256) 
+!           do m=1,sd_num_tmp
+!              n = ilist(m)
 
-             sdi_tmp%re(m) = sdi%re(n)
-             sdi_tmp%rp(m) = sdi%rp(n)
-             sdi_tmp%rho(m) = sdi%rho(n)
-             sdi_tmp%tf(m) = sdi%tf(n)
-             sdi_tmp%mrime(m) = sdi%mrime(n)
-             sdi_tmp%nmono(m) = sdi%nmono(n)
+!              sdi_tmp%re(m) = sdi%re(n)
+!              sdi_tmp%rp(m) = sdi%rp(n)
+!              sdi_tmp%rho(m) = sdi%rho(n)
+!              sdi_tmp%tf(m) = sdi%tf(n)
+!              sdi_tmp%mrime(m) = sdi%mrime(n)
+!              sdi_tmp%nmono(m) = sdi%nmono(n)
 
-          end do
-          !$omp end do simd
-       end if
-       !$omp end parallel
-    end if
+!           end do
+!           !$omp end do simd
+!        end if
+!        !$omp end parallel
+!     end if
 
   end subroutine sdm_copy_selected_sd
 end module m_sdm_idutil
