@@ -134,6 +134,7 @@ module scale_atmos_phy_mp_amps
   logical  :: l_restart          = .false.
   logical  :: l_fix_aerosols     = .true.
   logical  :: l_sediment         = .true.
+  logical  :: l_no_ice_heat      = .false.
   logical  :: l_fill_aerosols    = .false.
   logical  :: l_bin_shift        = .false.
   logical  :: l_axis_limit       = .true.
@@ -350,6 +351,7 @@ contains
        l_restart,          & ! whether restart to fill aerosols, this should be replaced by SCALE restart namelist!!!!!!!
        l_fix_aerosols,     & ! invariant aerosols throughout integration
        l_sediment,         & ! sediment on or off
+       l_no_ice_heat,      & ! ignore latent heat release due to ice processes
        l_fill_aerosols,    & ! fill aerosols in cloud-free region or not
        l_bin_shift,        & ! whether bin shift is performed after advection, default is false for testing phase, it is still under checking
        l_gaxis_version,    & ! axis definition, 1 (a, c, d, ag, cg), 2 (a, c/a, d/a, ag, cg/ag), 3 (a, c, d, ag/a, cg/a), default is 1
@@ -1536,7 +1538,7 @@ contains
     !$omp shared(CM, &
     !$omp        nz,nzh, &
     !$omp        IS,JS,KS,IE,JE,KE,IA,JA,KA, &
-    !$omp        level,l_gaxis_version,l_bin_shift,l_axis_limit,l_fix_aerosols,l_sediment,l_fill_aerosols,ini_aerosol_prf,amps_debug,fix_aerosol_type,l_restart, &
+    !$omp        level,l_gaxis_version,l_bin_shift,l_axis_limit,l_fix_aerosols,l_sediment,l_no_ice_heat,l_fill_aerosols,ini_aerosol_prf,amps_debug,fix_aerosol_type,l_restart, &
     !$omp        jseed,isect_seed,nextn,ifrst,seed_sec, &
     !$omp        TIME_AMPS,dt, &
     !$omp        QDRY,QTRC,DENS,W,MOMZ,PRES,TEMP,U,V,CVtot,SFLX_rain,SFLX_snow, &
@@ -1788,9 +1790,11 @@ contains
           enddo
 
 
-          do ibi = 1, nbi
-             Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
-          end do
+         if (.not. l_no_ice_heat) then
+            do ibi = 1, nbi
+               Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
+            end do
+         endif
 
        enddo Z_LOOP_01
        ! set underground, this is used for surface flux
@@ -2257,11 +2261,19 @@ contains
              ! vapor difference
              Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k)
 
-             ! ice difference
-             do ibi = 1, nbi
-                Emoist(k,2) = Emoist(k,2) &
-                     + LHF0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
-             enddo
+             if (.not. l_no_ice_heat) then
+               ! ice difference
+               do ibi = 1, nbi
+                  Emoist(k,2) = Emoist(k,2) &
+                        + LHF0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
+                     ! E1 = qv1 * C + qc1 * lv + qi1 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
+                     ! E2 = qv2 * C + qc2 * lv + qi2 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
+                     ! Delta E = E2 - E1 = Delta qv * C + Delta qc * lv + Delta qi * ls
+                     ! Delta q = 0 = Delta qv + Delta qc + Delta qi
+                     ! Q = qv1 + qc1 + qi1 = qv2 + qc2 + qi2
+                     ! Delta E = Delta qv * (C - lv) + Delta qi * (ls -lv)
+               enddo
+             endif
           enddo
 
           ! diabatic heating tendency, potential energy rho g h to be calculated in sedimentation later
