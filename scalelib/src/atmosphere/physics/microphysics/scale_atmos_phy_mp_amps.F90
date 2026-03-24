@@ -1790,9 +1790,15 @@ contains
           enddo
 
 
-         do ibi = 1, nbi
-            Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
-         end do
+         if (.not. l_no_ice_heat) then
+            do ibi = 1, nbi
+               Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
+            end do
+         else
+            do ibi = 1, nbi
+               Emoist(k,1) = Emoist(k,1) - LHV0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
+            end do
+         endif
 
        enddo Z_LOOP_01
        ! set underground, this is used for surface flux
@@ -2275,15 +2281,17 @@ contains
           else
             do k = KS, KE
                ! vapor difference
+               Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k)
                ! deposition (+ sign) and evaporation (-sign)
                ! if deposition occurs, deposition mass should return to vapor, so it is plus sign
                ! if evaporaion occurs, evaporated mass in vapor should return back to ice particles, so it is minus sign
-               Emoist(k,2) = - LHV0 * ( qvv(k) * moist_denv(k) + ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP )
+               ! Emoist(k,2) = - LHV0 * ( qvv(k) * moist_denv(k) + ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP )
 
                ! ice difference
                do ibi = 1, nbi
-                  Emoist(k,2) = Emoist(k,2) &
-                        + LHF0 * ( ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) - ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP )
+                  Emoist(k,2) = Emoist(k,2) - LHV0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
+                  ! Emoist(k,2) = Emoist(k,2) &
+                  !       + LHF0 * ( ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) - ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP )
                      ! E1 = qv1 * C + qc1 * lv + qi1 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
                      ! E2 = qv2 * C + qc2 * lv + qi2 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
                      ! Delta E = E2 - E1 = Delta qv * C + Delta qc * lv + Delta qi * ls
@@ -2921,10 +2929,15 @@ contains
          do k = KS, KE
             ! vapor difference
             dq = qvv(k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QV)
+            ! ice difference
+            do ibi = 1, nbi
+               dq = dq + ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) / DENS_NEW(k) &
+                        - QTRC(k,i,j,I_QI+ibi-1)
+            enddo
             ! deposition (+ sign) and evaporation (-sign)
             ! if deposition occurs, deposition mass should return to vapor, so it is plus sign
             ! if evaporaion occurs, evaporated mass in vapor should return back to ice particles, so it is minus sign
-            dq = dq + ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP / DENS_NEW(k)
+            ! dq = dq + ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP / DENS_NEW(k)
             CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_VAPOR * dq / dt
             CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_VAPOR * dq / dt
 
