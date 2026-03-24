@@ -2257,11 +2257,11 @@ contains
 !-------------------------------------------------------------------------
 !--------------------------------------------------------------------------
 
-          do k = KS, KE
-             ! vapor difference
-             Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k)
+          if (.not. l_no_ice_heat) then
+            do k = KS, KE
+               ! vapor difference
+               Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k)
 
-             if (.not. l_no_ice_heat) then
                ! ice difference
                do ibi = 1, nbi
                   Emoist(k,2) = Emoist(k,2) &
@@ -2273,8 +2273,16 @@ contains
                      ! Q = qv1 + qc1 + qi1 = qv2 + qc2 + qi2
                      ! Delta E = Delta qv * (C - lv) + Delta qi * (ls -lv)
                enddo
-             endif
-          enddo
+            enddo
+          else
+            do k = KS, KE
+               ! vapor difference
+               ! deposition (+ sign) and evaporation (-sign)
+               ! if deposition occurs, deposition mass should return to vapor, so it is plus sign
+               ! if evaporaion occurs, evaporated mass in vapor should return back to ice particles, so it is minus sign
+               Emoist(k,2) = - LHV0 * ( qvv(k) * moist_denv(k) + ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP )
+            enddo
+          endif
 
           ! diabatic heating tendency, potential energy rho g h to be calculated in sedimentation later
           do k = KS, KE
@@ -2906,7 +2914,7 @@ contains
             ! deposition (+ sign) and evaporation (-sign)
             ! if deposition occurs, deposition mass should return to vapor, so it is plus sign
             ! if evaporaion occurs, evaporated mass in vapor should return back to ice particles, so it is minus sign
-            dq = dq + AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12)
+            dq = dq + ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP / DENS_NEW(k)
             CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_VAPOR * dq / dt
             CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_VAPOR * dq / dt
 
