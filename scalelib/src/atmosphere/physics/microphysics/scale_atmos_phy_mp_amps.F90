@@ -2869,35 +2869,62 @@ contains
        enddo
 
        ! specific heat tendency, loop over liquid and ice mass tendency, (mixing ratio)
-       do k = KS, KE
-          ! vapor difference
-          dq = qvv(k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QV)
-          CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_VAPOR * dq / dt
-          CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_VAPOR * dq / dt
+       if (.not. l_no_ice_heat) then
+         do k = KS, KE
+            ! vapor difference
+            dq = qvv(k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QV)
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_VAPOR * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_VAPOR * dq / dt
 
-          ! liquid difference
-          dq = 0.0_RP
-          do ibr = 1, nbr
-             ! liquid drop mass
-             dq = dq + ( qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k) ) * moist_denv(k) / DENS_NEW(k) &
-                       - QTRC(k,i,j,I_QL+ibr-1)
-          enddo
-          do ibi = 1, nbi
-             ! melt water mass
-             dq = dq  + qipv(imw_q,ibi,1,k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QW+ibi-1)
-          enddo
-          CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_WATER * dq / dt
-          CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_WATER * dq / dt
+            ! liquid difference
+            dq = 0.0_RP
+            do ibr = 1, nbr
+               ! liquid drop mass
+               dq = dq + ( qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k) ) * moist_denv(k) / DENS_NEW(k) &
+                        - QTRC(k,i,j,I_QL+ibr-1)
+            enddo
+            do ibi = 1, nbi
+               ! melt water mass
+               dq = dq  + qipv(imw_q,ibi,1,k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QW+ibi-1)
+            enddo
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_WATER * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_WATER * dq / dt
 
-          ! ice difference
-          dq = 0.0_RP
-          do ibi = 1, nbi
-             dq = dq + ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) / DENS_NEW(k) &
-                       - QTRC(k,i,j,I_QI+ibi-1)
-          enddo
-          CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_ICE * dq / dt
-          CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_ICE * dq / dt
-       enddo
+            ! ice difference
+            dq = 0.0_RP
+            do ibi = 1, nbi
+               dq = dq + ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) / DENS_NEW(k) &
+                        - QTRC(k,i,j,I_QI+ibi-1)
+            enddo
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_ICE * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_ICE * dq / dt
+         enddo
+       else
+         do k = KS, KE
+            ! vapor difference
+            dq = qvv(k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QV)
+            ! deposition (+ sign) and evaporation (-sign)
+            ! if deposition occurs, deposition mass should return to vapor, so it is plus sign
+            ! if evaporaion occurs, evaporated mass in vapor should return back to ice particles, so it is minus sign
+            dq = dq + AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12)
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_VAPOR * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_VAPOR * dq / dt
+
+            ! liquid difference
+            dq = 0.0_RP
+            do ibr = 1, nbr
+               ! liquid drop mass
+               dq = dq + ( qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k) ) * moist_denv(k) / DENS_NEW(k) &
+                        - QTRC(k,i,j,I_QL+ibr-1)
+            enddo
+            do ibi = 1, nbi
+               ! melt water mass
+               dq = dq  + qipv(imw_q,ibi,1,k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QW+ibi-1)
+            enddo
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_WATER * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_WATER * dq / dt
+         enddo
+       endif
 
        ! momentum flux, rhou_t, rhov_t, and surface flux were calculated in the sedimentation process
 
