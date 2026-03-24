@@ -1790,11 +1790,9 @@ contains
           enddo
 
 
-         if (.not. l_no_ice_heat) then
-            do ibi = 1, nbi
-               Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
-            end do
-         endif
+         do ibi = 1, nbi
+            Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
+         end do
 
        enddo Z_LOOP_01
        ! set underground, this is used for surface flux
@@ -2281,6 +2279,18 @@ contains
                ! if deposition occurs, deposition mass should return to vapor, so it is plus sign
                ! if evaporaion occurs, evaporated mass in vapor should return back to ice particles, so it is minus sign
                Emoist(k,2) = - LHV0 * ( qvv(k) * moist_denv(k) + ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP )
+
+               ! ice difference
+               do ibi = 1, nbi
+                  Emoist(k,2) = Emoist(k,2) &
+                        + LHF0 * ( ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) - ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP )
+                     ! E1 = qv1 * C + qc1 * lv + qi1 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
+                     ! E2 = qv2 * C + qc2 * lv + qi2 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
+                     ! Delta E = E2 - E1 = Delta qv * C + Delta qc * lv + Delta qi * ls
+                     ! Delta q = 0 = Delta qv + Delta qc + Delta qi
+                     ! Q = qv1 + qc1 + qi1 = qv2 + qc2 + qi2
+                     ! Delta E = Delta qv * (C - lv) + Delta qi * (ls -lv)
+               enddo
             enddo
           endif
 
