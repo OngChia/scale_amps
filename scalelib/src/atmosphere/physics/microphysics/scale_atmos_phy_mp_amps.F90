@@ -1796,7 +1796,7 @@ contains
             end do
          else
             do ibi = 1, nbi
-               Emoist(k,1) = Emoist(k,1) - LHV0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
+               Emoist(k,1) = Emoist(k,1) - LHV0 * ( QTRC(k,i,j,I_QI+ibi-1) - QTRC(k,i,j,I_QPPVI+(ibi-1)*numberPPVI) ) * DENS(k,i,j)
             end do
          endif
 
@@ -2289,7 +2289,7 @@ contains
 
                ! ice difference
                do ibi = 1, nbi
-                  Emoist(k,2) = Emoist(k,2) - LHV0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
+                  Emoist(k,2) = Emoist(k,2) - LHV0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) - qipv(imr_q,ibi,1,k) ) * moist_denv(k)
                   ! Emoist(k,2) = Emoist(k,2) &
                   !       + LHF0 * ( ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) - ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP )
                      ! E1 = qv1 * C + qc1 * lv + qi1 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
@@ -2931,8 +2931,8 @@ contains
             dq = qvv(k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QV)
             ! ice difference
             do ibi = 1, nbi
-               dq = dq + ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) / DENS_NEW(k) &
-                        - QTRC(k,i,j,I_QI+ibi-1)
+               dq = dq + ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) - qipv(imr_q,ibi,1,k) ) * moist_denv(k) / DENS_NEW(k) &
+                        - ( QTRC(k,i,j,I_QI+ibi-1) - QTRC(k,i,j,I_QPPVI+(ibi-1)*numberPPVI) )
             enddo
             ! deposition (+ sign) and evaporation (-sign)
             ! if deposition occurs, deposition mass should return to vapor, so it is plus sign
