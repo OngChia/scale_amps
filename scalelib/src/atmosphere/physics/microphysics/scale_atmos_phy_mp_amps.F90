@@ -1552,7 +1552,7 @@ contains
     !$omp        amt_q,acon_q,ams_q, &
     !$omp        ncr,nbr,npr,nci,nbi,npi,nca,nba,npa, &
     !$omp        binbr,binbi,nbin_h,nbhzcl, &
-    !$omp        I_QV,I_QL,I_QPPVL,I_QI,I_QW,I_QPPVI,I_QPPVA, &
+    !$omp        I_QV,I_QL,I_QPPVL,I_QI,I_QW,I_QPPVI,I_QPPVA,numberPPVI, &
     !$omp        qapv_ini,den_ini, &
     !$omp        N_ap_ini,coef_ap,eps_ap,den_apt, &
     !$omp        advppmz,advppmze, &
