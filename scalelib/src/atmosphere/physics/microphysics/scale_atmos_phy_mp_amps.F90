@@ -3603,29 +3603,22 @@ contains
       !     2.7.  Check total mass conservation
       !-------------------------------------------------------------------------
       !--------------------------------------------------------------------------
-               if (amps_debug) then
-                  ! check total water content
-                  qtotal2 = 0.0_RP
-                  qtotal3 = 0.0_RP
-                  do k = KS, KE
-                     qtotal2(k) = qtotal2(k) + qvv(k)*moist_denv(k)
-                     do ibr=1,nbr
-                        qtotal2(k) = qtotal2(k) + (qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k))*moist_denv(k)
-                     enddo
-                     do ibi = 1, nbi
-                        qtotal2(k) = qtotal2(k) + (qipv(imt_q,ibi,1,k) - qipv(imat_q,ibi,1,k))*moist_denv(k)
-                        qtotal3(k) = qtotal3(k) + (qipv(imt_q,ibi,1,k) - qipv(imat_q,ibi,1,k) - qipv(imw_q,ibi,1,k))*moist_denv(k)
-                     enddo
+               ! check total water content
+               qtotal2 = 0.0_RP
+               qtotal3 = 0.0_RP
+               do k = KS, KE
+                  do ibi = 1, nbi
+                     qtotal2(k) = qtotal2(k) + (qipv(imt_q,ibi,1,k) - qipv(imat_q,ibi,1,k))*moist_denv(k)
+                     qtotal3(k) = qtotal3(k) + (qipv(imt_q,ibi,1,k) - qipv(imat_q,ibi,1,k) - qipv(imw_q,ibi,1,k))*moist_denv(k)
                   enddo
+               enddo
 
-                  do k = KS, KE
-                     den_diff(k) = den_diff(k) + qtotal2(k) - qtotal(k)
-                     if (abs(qtotal(k) - qtotal2(k)) > 0.001_RP*qtotal(k)) then
-                        LOG_WARN("ATMOS_PHY_MP_amps_tendency",'(a,3I3,3ES15.6)') "CHECKTOTAL ERROR:", k, i, j, qtotal(k), qtotal2(k), qtotal3(k)
-                     endif
-                  enddo
-               endif
-
+               do k = KS, KE
+                  if (abs(qtotal2(k)) > 0.00001_RP) then
+                     LOG_WARN("ATMOS_PHY_MP_amps_tendency",'(a,3I3,3ES15.6)') "ICE APPEARS IN LIQUID:", k, i, j, qtotal(k), qtotal2(k), qtotal3(k)
+                  endif
+               enddo
+               
       !--------------------------------------------------------------------------
       !--------------------------------------------------------------------------
       !     2.8.  Energy (C_V t) tendency of AMPS microphysical processes before sedimentation
