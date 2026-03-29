@@ -3024,7 +3024,7 @@ contains
       !     1.1. Initialize over a vertical column
       !-------------------------------------------------------------------------
       !--------------------------------------------------------------------------
-            Z_LOOP_01: do k = KS, KE
+            Z_LOOP_02: do k = KS, KE
                factor_mxr1 = (QDRY(k,i,j) + &
                               QTRC(k,i,j,I_QV)) ! moist air mixing ratio
                factor_mxr2 = (QDRY(k,i,j)*DENS(k,i,j) + &
@@ -3221,6 +3221,7 @@ contains
                            qapv(ipa,iba,ica,k)=0.0_RP
                         enddo
                      enddo
+                  endif
                enddo
 
 
@@ -3228,7 +3229,7 @@ contains
                !    Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
                ! end do
 
-            enddo Z_LOOP_01
+            enddo Z_LOOP_02
             ! set underground, this is used for surface flux
             tv(KS-1) = tv(KS)
             pbv(KS-1) = 0.0_RP
@@ -3406,7 +3407,7 @@ contains
       !-------------------------------------------------------------------------
       !--------------------------------------------------------------------------
 
-            MIC_IF: if(nmic>0) then
+            MIC_IF_2: if(nmic>0) then
                if(micro_io_strt(isect)) then
                   istrt=1
                else
@@ -3664,7 +3665,7 @@ contains
                   RHOE_t(k,i,j) = 0.0_RP
                end do
 
-            endif MIC_IF
+            endif MIC_IF_2
          endif
 
       enddo
