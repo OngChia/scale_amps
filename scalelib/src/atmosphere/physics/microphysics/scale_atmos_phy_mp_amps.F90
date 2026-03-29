@@ -2963,7 +2963,7 @@ contains
       !$omp        TIME_AMPS,dt, &
       !$omp        QDRY,QTRC,DENS,W,MOMZ,PRES,TEMP,U,V,CVtot,SFLX_rain,SFLX_snow, &
       !$omp        GRAV,PRE00,Rdry,CPdry,CP_VAPOR,CP_WATER,CV_VAPOR,CV_WATER,CP_ICE,CV_ICE,EPS,LHF0, &
-      !$omp        QLIQ,QICE, &
+      !$omp        QICE, &
       !$omp        RHOE_t, &
       !$omp        CZ,FZ, &
       !$omp        estbar,esitbar, &
@@ -2982,7 +2982,7 @@ contains
       do j = JS, JE
       do i = IS, IE
 
-         if any(QICE(:,i,j) > 1.e-8) then
+         if (any(QICE(:,i,j) > 1.e-8)) then
 
             isect = 1
             !$ isect = omp_get_thread_num()+1
