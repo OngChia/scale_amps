@@ -2982,7 +2982,7 @@ contains
       do j = JS, JE
       do i = IS, IE
 
-         if (any(QICE(:,i,j) > 1.e-8)) then
+         if (any(QICE(:,i,j,1) > 1.e-8)) then
 
             isect = 1
             !$ isect = omp_get_thread_num()+1
