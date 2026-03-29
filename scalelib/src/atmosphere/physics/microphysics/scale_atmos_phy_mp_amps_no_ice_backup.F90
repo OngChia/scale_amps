@@ -1790,9 +1790,15 @@ contains
           enddo
 
 
-          do ibi = 1, nbi
-             Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
-          end do
+         if (.not. l_no_ice_heat) then
+            do ibi = 1, nbi
+               Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
+            end do
+         else
+            do ibi = 1, nbi
+               Emoist(k,1) = Emoist(k,1) - LHV0 * ( QTRC(k,i,j,I_QI+ibi-1) - QTRC(k,i,j,I_QPPVI+(ibi-1)*numberPPVI) ) * DENS(k,i,j)
+            end do
+         endif
 
        enddo Z_LOOP_01
        ! set underground, this is used for surface flux
@@ -2255,21 +2261,46 @@ contains
 !-------------------------------------------------------------------------
 !--------------------------------------------------------------------------
 
-          do k = KS, KE
-             ! vapor difference
-             Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k) 
-             ! ice difference
-             do ibi = 1, nbi
-                Emoist(k,2) = Emoist(k,2) &
-                      + LHF0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
-                   ! E1 = qv1 * C + qc1 * lv + qi1 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
-                   ! E2 = qv2 * C + qc2 * lv + qi2 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
-                   ! Delta E = E2 - E1 = Delta qv * C + Delta qc * lv + Delta qi * ls
-                   ! Delta q = 0 = Delta qv + Delta qc + Delta qi
-                   ! Q = qv1 + qc1 + qi1 = qv2 + qc2 + qi2
-                   ! Delta E = Delta qv * (C - lv) + Delta qi * (ls -lv)
-             enddo
-          enddo
+          if (.not. l_no_ice_heat) then
+            do k = KS, KE
+               ! vapor difference
+               Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k)
+
+               ! ice difference
+               do ibi = 1, nbi
+                  Emoist(k,2) = Emoist(k,2) &
+                        + LHF0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
+                     ! E1 = qv1 * C + qc1 * lv + qi1 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
+                     ! E2 = qv2 * C + qc2 * lv + qi2 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
+                     ! Delta E = E2 - E1 = Delta qv * C + Delta qc * lv + Delta qi * ls
+                     ! Delta q = 0 = Delta qv + Delta qc + Delta qi
+                     ! Q = qv1 + qc1 + qi1 = qv2 + qc2 + qi2
+                     ! Delta E = Delta qv * (C - lv) + Delta qi * (ls -lv)
+               enddo
+            enddo
+          else
+            do k = KS, KE
+               ! vapor difference
+               Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k)
+               ! deposition (+ sign) and evaporation (-sign)
+               ! if deposition occurs, deposition mass should return to vapor, so it is plus sign
+               ! if evaporaion occurs, evaporated mass in vapor should return back to ice particles, so it is minus sign
+               ! Emoist(k,2) = - LHV0 * ( qvv(k) * moist_denv(k) + ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP )
+
+               ! ice difference
+               do ibi = 1, nbi
+                  Emoist(k,2) = Emoist(k,2) - LHV0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) - qipv(imr_q,ibi,1,k) ) * moist_denv(k)
+                  ! Emoist(k,2) = Emoist(k,2) &
+                  !       + LHF0 * ( ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) - ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP )
+                     ! E1 = qv1 * C + qc1 * lv + qi1 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
+                     ! E2 = qv2 * C + qc2 * lv + qi2 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
+                     ! Delta E = E2 - E1 = Delta qv * C + Delta qc * lv + Delta qi * ls
+                     ! Delta q = 0 = Delta qv + Delta qc + Delta qi
+                     ! Q = qv1 + qc1 + qi1 = qv2 + qc2 + qi2
+                     ! Delta E = Delta qv * (C - lv) + Delta qi * (ls -lv)
+               enddo
+            enddo
+          endif
 
           ! diabatic heating tendency, potential energy rho g h to be calculated in sedimentation later
           do k = KS, KE
@@ -2864,35 +2895,67 @@ contains
        enddo
 
        ! specific heat tendency, loop over liquid and ice mass tendency, (mixing ratio)
-       do k = KS, KE
-          ! vapor difference
-          dq = qvv(k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QV)
-          CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_VAPOR * dq / dt
-          CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_VAPOR * dq / dt
- 
-          ! liquid difference
-          dq = 0.0_RP
-          do ibr = 1, nbr
-             ! liquid drop mass
-             dq = dq + ( qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k) ) * moist_denv(k) / DENS_NEW(k) &
-                      - QTRC(k,i,j,I_QL+ibr-1)
-          enddo
-          do ibi = 1, nbi
-             ! melt water mass
-             dq = dq  + qipv(imw_q,ibi,1,k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QW+ibi-1)
-          enddo
-          CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_WATER * dq / dt
-          CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_WATER * dq / dt
- 
-          ! ice difference
-          dq = 0.0_RP
-          do ibi = 1, nbi
-             dq = dq + ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) / DENS_NEW(k) &
-                      - QTRC(k,i,j,I_QI+ibi-1)
-          enddo
-          CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_ICE * dq / dt
-          CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_ICE * dq / dt
-       enddo
+       if (.not. l_no_ice_heat) then
+         do k = KS, KE
+            ! vapor difference
+            dq = qvv(k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QV)
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_VAPOR * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_VAPOR * dq / dt
+
+            ! liquid difference
+            dq = 0.0_RP
+            do ibr = 1, nbr
+               ! liquid drop mass
+               dq = dq + ( qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k) ) * moist_denv(k) / DENS_NEW(k) &
+                        - QTRC(k,i,j,I_QL+ibr-1)
+            enddo
+            do ibi = 1, nbi
+               ! melt water mass
+               dq = dq  + qipv(imw_q,ibi,1,k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QW+ibi-1)
+            enddo
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_WATER * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_WATER * dq / dt
+
+            ! ice difference
+            dq = 0.0_RP
+            do ibi = 1, nbi
+               dq = dq + ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) / DENS_NEW(k) &
+                        - QTRC(k,i,j,I_QI+ibi-1)
+            enddo
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_ICE * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_ICE * dq / dt
+         enddo
+       else
+         do k = KS, KE
+            ! vapor difference
+            dq = qvv(k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QV)
+            ! ice difference
+            do ibi = 1, nbi
+               dq = dq + ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) - qipv(imr_q,ibi,1,k) ) * moist_denv(k) / DENS_NEW(k) &
+                        - ( QTRC(k,i,j,I_QI+ibi-1) - QTRC(k,i,j,I_QPPVI+(ibi-1)*numberPPVI) )
+            enddo
+            ! deposition (+ sign) and evaporation (-sign)
+            ! if deposition occurs, deposition mass should return to vapor, so it is plus sign
+            ! if evaporaion occurs, evaporated mass in vapor should return back to ice particles, so it is minus sign
+            ! dq = dq + ( AMPS_mt(k,i,j,11) + AMPS_mt(k,i,j,12) ) * 1000.0_RP / DENS_NEW(k)
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_VAPOR * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_VAPOR * dq / dt
+
+            ! liquid difference
+            dq = 0.0_RP
+            do ibr = 1, nbr
+               ! liquid drop mass
+               dq = dq + ( qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k) ) * moist_denv(k) / DENS_NEW(k) &
+                        - QTRC(k,i,j,I_QL+ibr-1)
+            enddo
+            do ibi = 1, nbi
+               ! melt water mass
+               dq = dq  + qipv(imw_q,ibi,1,k) * moist_denv(k) / DENS_NEW(k) - QTRC(k,i,j,I_QW+ibi-1)
+            enddo
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_WATER * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_WATER * dq / dt
+         enddo
+       endif
 
        ! momentum flux, rhou_t, rhov_t, and surface flux were calculated in the sedimentation process
 
@@ -2926,763 +2989,6 @@ contains
 
     enddo
     enddo
-
-   !
-   !
-   !  compute water-only microphysics in a colum of cell grids where QICE > 1.e-8 if no_ice_heat is turned on
-   !
-   !
-
-   if (l_no_ice_heat) then
-      !$omp parallel do OMP_SCHEDULE_ collapse(2) default(none) &
-      !$omp private(i,j,k,m, &
-      !$omp         qrpv,qipv,qapv,qcv,qrv,qiv,qrpvm,qipvm,qapvm,qcvm,qrvm,qivm,qrov,qiov, &
-      !$omp         den_t,den_diff,DENS_NEW,moist_denv, &
-      !$omp         moist_denvm, &
-      !$omp         dz1v,k1etatv, &
-      !$omp         k1r,k2r,k1br,k2br,k1i,k2i,k1bi,k2bi,k1m,k2m,k1c,k2c, &
-      !$omp         dmtendl,dmtendlm,dcontendl,dcontendlm,dbintendl,dbintendlm, &
-      !$omp         factor_mxr1,factor_mxr2, &
-      !$omp         ptotv,tv,thv,piv,pbv,qvv,thetav,wbv,momv,trpv, &
-      !$omp         ptotvm,tvm,v3v,pivm,pbvm,qvvm,thetavm,wbvm,trpvm,zstv,dzzmvm, &
-      !$omp         qtotal,qtotal2,qtotal3, &
-      !$omp         mmassrv,mmassiv, &
-      !$omp         imicv,kmicv,jmicv,imicvm,kmicvm,jmicvm,ftrpv, &
-      !$omp         icr,ipr,ipr_qpr,ibr,ici,ipi,ipi_qi,ibi,ica,ipa,ipa_qpa,iba, &
-      !$omp         iph,ivis,istrt,isn, &
-      !$omp         micptrv,micptrvm,nmic,kmic, &
-      !$omp         isect, &
-      !$omp         pgnd,thskinv,spdsfcv, &
-      !$omp         dzzmv,dzvmv, &
-      !$omp         Emoist,dq) &
-      !$omp shared(CM, &
-      !$omp        nz,nzh, &
-      !$omp        IS,JS,KS,IE,JE,KE,IA,JA,KA, &
-      !$omp        level,l_gaxis_version,l_bin_shift,l_axis_limit,l_fix_aerosols,l_sediment,l_fill_aerosols,ini_aerosol_prf,amps_debug,fix_aerosol_type,l_restart, &
-      !$omp        jseed,isect_seed,nextn,ifrst,seed_sec, &
-      !$omp        TIME_AMPS,dt, &
-      !$omp        QDRY,QTRC,DENS,W,MOMZ,PRES,TEMP,U,V,CVtot,SFLX_rain,SFLX_snow, &
-      !$omp        GRAV,PRE00,Rdry,CPdry,CP_VAPOR,CP_WATER,CV_VAPOR,CV_WATER,CP_ICE,CV_ICE,EPS,LHF0, &
-      !$omp        QLIQ,QICE, &
-      !$omp        RHOE_t, &
-      !$omp        CZ,FZ, &
-      !$omp        estbar,esitbar, &
-      !$omp        rmt_q,rmat_q,rmas_q,rcon_q,imt_q,imr_q,ima_q,imc_q,imw_q,imf_q,imat_q,imas_q, &
-      !$omp        icon_q,iacr_q,iccr_q,idcr_q,iag_q,icg_q,ivcs_q,inex_q, &
-      !$omp        amt_q,acon_q,ams_q, &
-      !$omp        ncr,nbr,npr,nci,nbi,npi,nca,nba,npa, &
-      !$omp        binbr,binbi,nbin_h,nbhzcl, &
-      !$omp        I_QV,I_QL,I_QPPVL,I_QI,I_QW,I_QPPVI,I_QPPVA,numberPPVI, &
-      !$omp        qapv_ini,den_ini, &
-      !$omp        N_ap_ini,coef_ap,eps_ap,den_apt, &
-      !$omp        advppmz,advppmze, &
-      !$omp        mmassrv_global,mmassiv_global, &
-      !$omp        level_comp,micro_io_strt,idir,isprayr,isprayi,iadvv,waccv, &
-      !$omp        nsect)
-      do j = JS, JE
-      do i = IS, IE
-
-         if any(QICE(:,i,j) > 1.e-8) then
-
-            isect = 1
-            !$ isect = omp_get_thread_num()+1
-
-            qrpv = 0.0_RP
-            qipv = 0.0_RP
-            qapv = 0.0_RP
-            qrpvm = 0.0_RP
-            qipvm = 0.0_RP
-            qapvm = 0.0_RP
-
-            den_t = 0.0_RP
-            den_diff = 0.0_RP
-            DENS_NEW = 0.0_RP
-            moist_denv = 0.0_RP
-
-            dz1v = FZ(KS,i,j) - FZ(KS-1,i,j)
-
-            k1etatv(:) = k1eta
-
-            k1r = 10000
-            k2r = -10000
-            k1i = 10000
-            k2i = -10000
-
-            dmtendl = 0.0_RP
-            dmtendlm = 0.0_RP
-            dcontendl = 0.0_RP
-            dcontendlm = 0.0_RP
-            dbintendl = 0.0_RP
-            dbintendlm = 0.0_RP
-
-            ! total water content
-            qtotal = 0.0_RP
-
-      !mark1
-      !--------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-      !     1.1. Initialize over a vertical column
-      !-------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-            Z_LOOP_01: do k = KS, KE
-               factor_mxr1 = (QDRY(k,i,j) + &
-                              QTRC(k,i,j,I_QV)) ! moist air mixing ratio
-               factor_mxr2 = (QDRY(k,i,j)*DENS(k,i,j) + &
-                              QTRC(k,i,j,I_QV)*DENS(k,i,j))
-               ! rho[kg m-3] = 0.001 rho[g cm-3]
-
-               !
-               ! set the thermodynamics variables to the updated state.
-               !
-               !k=k_kid+1
-
-               ! pressure
-               ptotv(k) = PRES(k,i,j)
-
-               ! temperature
-               tv(k) = TEMP(k,i,j)
-
-               ! potential temperature
-               thv(k) = tv(k)*(PRE00/ptotv(k))**(Rdry/CPdry)
-
-               ! exner function
-               piv(k) = tv(k)/thv(k)*CPdry
-
-               ! unknown
-               pbv(k) = 0.0_RP
-
-               ! density
-               moist_denv(k) = DENS(k,i,j)*factor_mxr1
-
-               ! vapor mixing ratio
-               qvv(k) = QTRC(k,i,j,I_QV)/factor_mxr1
-               qtotal(k) = qtotal(k) + qvv(k)*factor_mxr2
-               Emoist(k,1) = - LHV0 * QTRC(k,i,j,I_QV) * DENS(k,i,j)
-
-               ! virtual potential temperature
-               thetav(k) = thv(k)*(1.0e+0+0.61*qvv(k))
-
-               ! w at full grid
-               wbv(k) = W(k,i,j)
-               ! w at half grid
-               momv(k) = MOMZ(k,i,j)
-
-               kmicv(k) = k-KS+1
-               imicv(k) = i
-               jmicv(k) = j
-
-               ftrpv(k,:) = 0.0_RP
-
-      ! mark2
-               !
-               ! Initialize liquid spectrum
-               !
-               do icr = 1, ncr ! assume to be 1
-                  ipr_qpr = 0
-                  do ibr = 1, nbr
-                     qrpv(rmt_q,ibr,icr,k) = ( QTRC(k,i,j,I_QL+ibr-1) + QTRC(k,i,j,I_QPPVL+ipr_qpr) ) / factor_mxr1
-                     do ipr = rmat_q, rmas_q
-                        qrpv(ipr,ibr,icr,k) = QTRC(k,i,j,I_QPPVL+ipr_qpr)/factor_mxr1
-                        ipr_qpr = ipr_qpr + 1
-                     enddo
-                     ! number concentration, non-mass variable
-                     qrpv(rcon_q,ibr,icr,k) = QTRC(k,i,j,I_QPPVL+ipr_qpr)/factor_mxr1/0.001_RP
-                     ipr_qpr = ipr_qpr + 1
-                     do ipr = npr-1, npr
-                        qrpv(ipr,ibr,icr,k) = 0.0
-                     enddo
-                     mmassrv(ibr,icr,k) = 0.0
-                     if(qrpv(rmt_q,ibr,icr,k)>1.0e-25) then
-                        k1r = min(k1r,k-KS+1)
-                        k2r = max(k2r,k-KS+1)
-                     endif
-                     qrov(ibr,icr,k) = qrpv(rmt_q,ibr,icr,k)
-                     ! total water content
-                     qtotal(k) = qtotal(k) + (qrpv(rmt_q,ibr,icr,k) - qrpv(rmat_q,ibr,icr,k))*factor_mxr2
-                  enddo
-
-               enddo
-
-               !
-               ! Initialize ice spectrum
-               !
-               do ici = 1, nci ! assumed to be 1
-                  ipi_qi = 0
-                  do ibi = 1, nbi
-                     ! total ice mass
-                     qipv(imt_q,ibi,ici,k) = 0.0_RP
-                     ! rimed, aggregate, and crystal
-                     do ipi = imr_q, imc_q
-                        qipv(ipi,ibi,ici,k) = 0.0_RP
-                        ipi_qi = ipi_qi + 1
-                     enddo
-                     ! melt water
-                     qipv(imw_q,ibi,ici,k) = 0.0_RP
-                     ! frozen water
-                     qipv(imf_q,ibi,ici,k) = 0.0_RP
-                     ipi_qi = ipi_qi + 1
-
-                     ! aerosol mass
-                     do ipi = imat_q, imas_q
-                        qipv(ipi,ibi,ici,k) = 0.0_RP
-                        ipi_qi = ipi_qi + 1
-                     enddo
-
-                     ! number concentration and other non-mass variables
-                     if (l_gaxis_version == 1) then
-                        ! -- ORIGINAL
-
-                        do ipi = imas_q+1, npi-2
-                           qipv(ipi,ibi,ici,k) = 0.0_RP
-                           ipi_qi = ipi_qi + 1
-                        enddo
-
-                     else if (l_gaxis_version == 2) then
-                        ! -- METHOD 1
-                        do ipi = imas_q+1, npi-2
-                           qipv(ipi,ibi,ici,k) = 0.0_RP
-                           ipi_qi = ipi_qi + 1
-                        enddo
-
-                        if (qipv(icon_q,ibi,ici,k) < 1.e-22_RP) then
-
-                           qipv(iccr_q,ibi,ici,k) = 0.0_RP
-                           qipv(idcr_q,ibi,ici,k) = 0.0_RP
-                           qipv(icg_q,ibi,ici,k) = 0.0_RP
-
-                        else
-                           qipv(iccr_q,ibi,ici,k) = 0.0_RP
-                           qipv(idcr_q,ibi,ici,k) = 0.0_RP
-                           qipv(icg_q,ibi,ici,k) = 0.0_RP
-                        endif
-
-                     else if (l_gaxis_version == 3) then
-                        ! -- METHOD 2
-                        do ipi = imas_q+1, npi-2
-                           qipv(ipi,ibi,ici,k) = 0.0_RP
-                           ipi_qi = ipi_qi + 1
-                        enddo
-                        if (qipv(icon_q,ibi,ici,k) < 1.e-22_RP) then
-                           qipv(iag_q,ibi,ici,k) = 0.0_RP
-                           qipv(icg_q,ibi,ici,k) = 0.0_RP
-                        else
-                           qipv(iag_q,ibi,ici,k) = 0.0_RP
-                           qipv(icg_q,ibi,ici,k) = 0.0_RP
-                        endif
-
-                     endif
-
-                  enddo
-
-                  do ibi = 1, nbi
-                     do ipi = npi-1, npi
-                        qipv(ipi,ibi,ici,k) = 0.0_RP
-                     enddo
-                     mmassiv(ibi,ici,k)=0.0_RP
-                     if(qipv(imt_q,ibi,ici,k)>1.0e-25) then
-                        k1i=min(k1i,k)
-                        k2i=max(k2i,k)
-                     endif
-                     qiov(ibi,ici,k)=0.0_RP
-                     ! total water content
-                     qtotal(k) = qtotal(k) + 0.0_RP
-                  enddo
-
-               enddo
-
-               !
-               ! Initialize aerosol spectrum
-               !
-               ipa_qpa = 0
-               do ica = 1, nca
-                  if (ica >= 2) then
-                     do iba = 1, nba
-                        !
-                        !do ipa=1,npa-2
-                        qapv(amt_q,iba,ica,k) = 0.0_RP
-                        qapv(acon_q,iba,ica,k) = 0.0_RP
-                        qapv(ams_q,iba,ica,k) = 0.0_RP
-                        ipa_qpa = ipa_qpa + 3
-                        !enddo
-                        do ipa = npa-1, npa
-                           qapv(ipa,iba,ica,k)=0.0_RP
-                        enddo
-                     enddo
-                  else
-                     do iba = 1, nba
-                        !
-                        !do ipa=1,npa-2
-                        qapv(amt_q,iba,ica,k) = QTRC(k,i,j,I_QPPVA+ipa_qpa)/factor_mxr1
-                        qapv(acon_q,iba,ica,k) = QTRC(k,i,j,I_QPPVA+ipa_qpa+1)/factor_mxr1/0.001_RP
-                        qapv(ams_q,iba,ica,k) = QTRC(k,i,j,I_QPPVA+ipa_qpa+2)/factor_mxr1
-                        ipa_qpa = ipa_qpa + 3
-                        !enddo
-                        do ipa = npa-1, npa
-                           qapv(ipa,iba,ica,k)=0.0_RP
-                        enddo
-                     enddo
-               enddo
-
-
-               ! do ibi = 1, nbi
-               !    Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
-               ! end do
-
-            enddo Z_LOOP_01
-            ! set underground, this is used for surface flux
-            tv(KS-1) = tv(KS)
-            pbv(KS-1) = 0.0_RP
-            qvv(KS-1) = qvv(KS)
-            ptotv(KS-1) = ptotv(KS)*exp( GRAV/Rdry/(tv(KS-1)*(1.0_RP + 0.61_RP*qvv(KS-1))) * ( CZ(KS,i,j) - CZ(KS-1,i,j) ) )
-            moist_denv(KS-1) = ptotv(KS-1)/(Rdry*tv(KS-1)*(1.0_RP+0.61_RP*qvv(KS-1)))
-            piv(KS-1) = (ptotv(KS-1)/PRE00)**(Rdry/CPdry)*CPdry
-            thv(KS-1) = tv(KS-1)*CPdry/piv(KS-1)
-            thetav(KS-1) = thv(KS-1)*(1.0_RP+0.61_RP*qvv(KS-1)/QDRY(KS,i,j))
-
-            pgnd=0.5_RP*(ptotv(KS-1)+ptotv(KS))
-
-            thskinv = thv(KS-1)
-            spdsfcv = 0.0_RP
-            kmicv(KS-1) = 1
-            imicv(KS-1) = i
-            jmicv(KS-1) = j
-
-
-            ! grid vertical spacing
-            do k = KS, KE
-               dzzmv(k) = 1.0_RP / ( FZ(k,i,j) - FZ(k-1,i,j) )
-            enddo
-            dzzmv(KS-1) = dzzmv(KS)
-
-            ! half grid vertical spacing (for MOMZ)
-            do k = KS-1, KE-1
-               dzvmv(k) = 1.0_RP / ( CZ(k+1,i,j) - CZ(k,i,j) )
-            enddo
-
-      !
-      !-----------------------------------------------------------------------------------------------
-      !-----------------------------------------------------------------------------------------------
-      !     1.2   retrieve mean mass calculated at the end of previous call of microphysics scheme
-      !-----------------------------------------------------------------------------------------------
-      !-----------------------------------------------------------------------------------------------
-      !
-            if (level.ge.5) then
-               do k = KS-1, KE
-                  do icr = 1, ncr
-                  do ibr = 1, nbr
-                     mmassrv(ibr,icr,k) = 0.0_RP
-                  enddo
-                  enddo
-                  do ici = 1, nci
-                  do ibi = 1, nbi
-                     mmassiv(ibi,ici,k) = 0.0_RP
-                  enddo
-                  enddo
-               enddo
-               if (TIME_AMPS == 0) then
-                  if (k2r.gt.0) call cal_mmass(mmassrv &
-                                             ,k1r,k2r,npr,nbr,ncr,qrpv,nzh &
-                                             ,0)
-                  if (k2i.gt.0) call cal_mmass(mmassiv &
-                                             ,k1i,k2i,npi,nbi,nci,qipv,nzh &
-                                             ,1)
-               else
-                  if (k2r.gt.0) then
-                     do k = KS, KE
-                        mmassrv(:,:,k) = mmassrv_global(:,:,k,i,j)
-                     enddo
-                  endif
-                  if (k2i.gt.0) then
-                     do k = KS, KE
-                        mmassiv(:,:,k) = mmassiv_global(:,:,k,i,j)
-                     enddo
-                  endif
-               endif
-            endif
-
-      !
-      !-----------------------------------------------------------------------------------------------
-      !-----------------------------------------------------------------------------------------------
-      !     1.3   shift bins in rain and ice spectra for AMPS
-      !-----------------------------------------------------------------------------------------------
-      !-----------------------------------------------------------------------------------------------
-      !
-            if(level.eq.5 .and. TIME_AMPS > 0 .and. l_bin_shift) then
-               if (k2r.gt.0) then
-                  iph=1
-                  call shift_bin_vec(nzh,npr,nbr,ncr,k1r,k2r &
-                                    ,binbr,qrpv,mmassrv &
-                                    ,moist_denv,iph,kmicv,imicv,jmicv)
-               endif
-               if (k2i.gt.0) then
-                  iph=2
-                  call shift_bin_vec(nzh,npi,nbi,nci,k1i,k2i &
-                                    ,binbi,qipv,mmassiv &
-                                    ,moist_denv,iph,kmicv,imicv,jmicv)
-               endif
-            endif
-
-      !
-      !-----------------------------------------------------------------------------------------------
-      !-----------------------------------------------------------------------------------------------
-      !     1.4   diagnose thermodynamical variables
-      !-----------------------------------------------------------------------------------------------
-      !-----------------------------------------------------------------------------------------------
-      !
-      !     diagnose the vapor content from the (total hydrometeors - liquid+ice)
-      !     diagnose the total hydrometeors, density, and ice-liquid potential temperature
-            ivis = 1
-            call moistthermo2_scale( KS, KE, &
-                                    npr,nbr,ncr,npi,nbi,nci,npa,nba,nca,   &
-                                    level,nbhzcl,   &
-                                    i,j, &
-                                    trpv(:,1),thv,moist_denv,tv,  &
-                                    trpv(:,2),qvv,qcv,qrv,qiv,micptrv,   &
-                                    qrpv,qipv,qapv,piv,ptotv,  &
-                                    ivis, isect,'first')
-
-            if (TIME_AMPS == 0) then
-               ! aerosol initial profiles (KS:KE,IS:IE,JS:JE)
-               ! the input is kgm-3/kgm-3 and m-3/kgm-3
-               ! the output's unit is gcm-3/gcm-3 and cm-3/gcm-3
-      ! mark3
-
-               if ( .not. l_restart ) then
-                  do k = KS, KE
-                     do ica = 1, nca
-                        do iba = 1, nba
-                           do ipa = 1, npa-2
-                              qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
-                           enddo
-                        enddo
-                     enddo
-                  enddo
-               !  else
-               !     do k = KS, KE
-               !        do ica = 2, nca
-               !           do iba = 1, nba
-               !              do ipa = 1, npa-2
-               !                 qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
-               !              enddo
-               !           enddo
-               !        enddo
-               !     enddo
-               endif
-
-            else
-
-               ! refill aerosols to initial condition
-               if ( l_fix_aerosols ) then
-                  do k = KS, KE
-                     do ica = 1, nca
-                        if ( fix_aerosol_type(ica) ) then
-                           do iba = 1, nba
-                              do ipa = 1, npa-2
-                                 qapv(ipa,iba,ica,k) = qapv_ini(ipa,iba,ica,k,i,j)*den_ini(k,i,j)/moist_denv(k)
-                              enddo
-                           enddo
-                        endif
-                     enddo
-                  enddo
-               endif
-
-            endif
-
-      !--------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-      !     2.  Cloud Microphysics
-      !-------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-            nmic=0
-            do k = KS-1, KE
-               if(micptrv(k)>0) then
-                  nmic=nmic+1
-                  kmic(nmic)=k
-               endif
-            enddo
-      !--------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-      !     2.1.  Gather cloudy grids
-      !-------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-
-            MIC_IF: if(nmic>0) then
-               if(micro_io_strt(isect)) then
-                  istrt=1
-               else
-                  istrt=0
-               endif
-
-               do m = 1, nmic
-                  k=kmic(m)
-                  kmicvm(m)=k-KS+2
-                  imicvm(m)=i
-                  jmicvm(m)=j
-
-                  trpvm(m,1)=trpv(k,1)
-                  trpvm(m,2)=trpv(k,2)
-                  thetavm(m)=thetav(k)
-                  moist_denvm(m)=moist_denv(k)
-                  !if(moist_denvm(m).lt.0.) then
-                  !  write(*,*) "part4 :density is negative:",m,moist_denvm(m)
-                  !end if
-
-                  qcvm(m)=qcv(k)
-                  v3v(m)=0.0_RP
-                  qvvm(m)=qvv(k)
-                  pivm(m)=piv(k)
-                  pbvm(m)=pbv(k)
-                  ptotvm(m)=ptotv(k)
-                  tvm(m)=tv(k)
-                  wbvm(m)=wbv(k)
-
-                  qrvm(m)=qrv(k)
-                  qivm(m)=qiv(k)
-
-                  zstv(m)=0.0_RP
-                  dzzmvm(m)=dzzmv(k)
-
-                  micptrvm(m)=micptrv(k)
-                  do icr = 1, ncr
-                     do ibr = 1, nbr
-                        do ipr = 1, npr
-                           qrpvm(ipr,ibr,icr,m)=qrpv(ipr,ibr,icr,k)
-                        enddo
-                     enddo
-                  enddo
-                  do ici = 1, nci
-                     do ibi = 1, nbi
-                        do ipi = 1, npi
-                           qipvm(ipi,ibi,ici,m)=qipv(ipi,ibi,ici,k)
-                        enddo
-                     enddo
-                  enddo
-                  do ica = 1, nca
-                     do iba = 1, nba
-                        do ipa = 1, npa
-                           qapvm(ipa,iba,ica,m)=qapv(ipa,iba,ica,k)
-                        enddo
-                     enddo
-                  enddo
-
-               enddo
-
-      !--------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-      !     2.2.  Call aerosol-cloud microphysics schemes
-      !-------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-               if(level.ge.5) then
-      !--------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-      !     2.2.1.  AMPS
-      !-------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-
-                  call PROF_rapstart("amps_micro",3)
-
-                  call ifc_cloud_micro( &
-                                       CM(isect) &
-                                       ,qcvm,v3v &
-                                       ,qrpvm,npr,nbr,ncr  &
-                                       ,qipvm,npi,nbi,nci &
-                                       ,qapvm,npa,nba,nca &
-                                       ,qvvm, moist_denvm, ptotvm, TVm, wbvm &
-                                       ,nmic,imicvm,jmicvm,kmicvm,iproc_t,isect-1,istrt &
-                                       ,trpvm(:,2),trpvm(:,1) &
-                                       ,jseed(isect),ifrst(isect),isect_seed(isect) &
-                                       ,nextn(isect)  &
-                                       ,dmtendlm,dcontendlm,dbintendlm &
-                                       )
-
-                  call PROF_rapend("amps_micro",3)
-
-               end if
-
-               micro_io_strt(isect)=.false.
-      !-----------------------------------------------------------------------------------------------
-      !-----------------------------------------------------------------------------------------------
-      !     2.3   diagnose thermodynamical variables
-      !-----------------------------------------------------------------------------------------------
-      !-----------------------------------------------------------------------------------------------
-               ivis=0
-               ! microphysics variables here are mixing ratio over moist air density
-               call moistthermo2(thetavm,moist_denvm,tvm,ptotvm  &
-                                 ,trpvm(:,2),qvvm,qcvm,qrvm,qivm,micptrvm   &
-                                 ,npr,nbr,ncr,npi,nbi,nci   &
-                                 ,level,nbhzcl   &
-                                 ,trpvm(:,1),qrpvm,qipvm, pbvm  &
-                                 ,estbar,esitbar,pivm &
-                                 ,nmic,imicvm,jmicvm,kmicvm &
-                                 ,ivis,'af_cm', isect)
-
-      !--------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-      !     2.4.  Scatter back cloudy grids
-      !-------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-               k1br = 10000
-               k2br = -10000
-               k1bi = 10000
-               k2bi = -10000
-               do m = 1, nmic
-                  k = kmic(m)
-
-                  trpv(k,1) = trpvm(m,1)
-                  trpv(k,2) = trpvm(m,2)
-                  moist_denv(k) = moist_denvm(m)
-                  thetav(k) = thetavm(m)
-
-                  qcv(k) = qcvm(m)
-                  qvv(k) = qvvm(m)
-                  ptotv(k) = ptotvm(m)
-                  tv(k) = tvm(m)
-                  qrv(k) = qrvm(m)
-                  qiv(k) = qivm(m)
-
-                  do icr = 1, ncr
-                     do ibr = 1, nbr
-                        do ipr = 1, npr
-                           qrpv(ipr,ibr,icr,k) = qrpvm(ipr,ibr,icr,m)
-                        enddo
-                        if(qrpv(1,ibr,icr,k).ne.0.0) then
-                           k1br(ibr,icr) = min(k1br(ibr,icr),k)
-                           k2br(ibr,icr) = max(k2br(ibr,icr),k)
-                        end if
-                     enddo
-                  enddo
-                  do ici = 1, nci
-                     do ibi = 1, nbi
-                        do ipi = 1, npi
-                           qipv(ipi,ibi,ici,k) = qipvm(ipi,ibi,ici,m)
-                        enddo
-                        if(qipv(1,ibi,ici,k).ne.0.0) then
-                           k1bi(ibi,ici) = min(k1bi(ibi,ici),k)
-                           k2bi(ibi,ici) = max(k2bi(ibi,ici),k)
-                        end if
-                     enddo
-                  enddo
-                  do ica = 1, nca
-                     do iba = 1, nba
-                        do ipa = 1, npa
-                           qapv(ipa,iba,ica,k) = qapvm(ipa,iba,ica,m)
-                        enddo
-                     enddo
-                  enddo
-
-                  dmtendl(:,:,k) = dmtendlm(:,:,m)
-                  dcontendl(:,:,k) = dcontendlm(:,:,m)
-                  dbintendl(:,:,:,k) = dbintendlm(:,:,:,m)
-
-               enddo
-
-      !--------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-      !     2.6.  Find limits
-      !-------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-               call findcond1(k1m,k2m,k1c,k2c,k1r,k2r,k1i,k2i,micptrv,qrv,qiv &
-                              ,nzh,qcv,k1etatv(:),ncr,nci,i,j,level,0,idir,'bf_sed')
-
-      ! k1m = lower limit of grid index containing any hydrometeors
-      ! k2m = upper limit of grid index containing any hydrometeors
-      ! k1c = lower limit of grid index containing cloud hydrometeors (if level=5, cloud = rain)
-      ! k2c = upper limit of grid index containing cloud hydrometeors (if level=5, cloud = rain)
-      ! k1r = lower limit of grid index containing rain hydrometeors
-      ! k2r = upper limit of grid index containing rain hydrometeors
-      ! k1i = lower limit of grid index containing ice hydrometeors
-      ! k2i = upper limit of grid index containing ice hydrometeors
-      ! j = 1
-      ! idir = 3
-      ! kbnd = 0
-      ! k1eta = 2
-
-      !--------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-      !     2.7.  Check total mass conservation
-      !-------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-               if (amps_debug) then
-                  ! check total water content
-                  qtotal2 = 0.0_RP
-                  qtotal3 = 0.0_RP
-                  do k = KS, KE
-                     qtotal2(k) = qtotal2(k) + qvv(k)*moist_denv(k)
-                     do ibr=1,nbr
-                        qtotal2(k) = qtotal2(k) + (qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k))*moist_denv(k)
-                     enddo
-                     do ibi = 1, nbi
-                        qtotal2(k) = qtotal2(k) + (qipv(imt_q,ibi,1,k) - qipv(imat_q,ibi,1,k))*moist_denv(k)
-                        qtotal3(k) = qtotal3(k) + (qipv(imt_q,ibi,1,k) - qipv(imat_q,ibi,1,k) - qipv(imw_q,ibi,1,k))*moist_denv(k)
-                     enddo
-                  enddo
-
-                  do k = KS, KE
-                     den_diff(k) = den_diff(k) + qtotal2(k) - qtotal(k)
-                     if (abs(qtotal(k) - qtotal2(k)) > 0.001_RP*qtotal(k)) then
-                        LOG_WARN("ATMOS_PHY_MP_amps_tendency",'(a,3I3,3ES15.6)') "CHECKTOTAL ERROR:", k, i, j, qtotal(k), qtotal2(k), qtotal3(k)
-                     endif
-                  enddo
-               endif
-
-      !--------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-      !     2.8.  Energy (C_V t) tendency of AMPS microphysical processes before sedimentation
-      !-------------------------------------------------------------------------
-      !--------------------------------------------------------------------------
-
-               do k = KS, KE
-                  ! vapor difference
-                  Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k) 
-                  ! ice difference
-                  ! do ibi = 1, nbi
-                  !    Emoist(k,2) = Emoist(k,2) &
-                  !          + LHF0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
-                  !       ! E1 = qv1 * C + qc1 * lv + qi1 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
-                  !       ! E2 = qv2 * C + qc2 * lv + qi2 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
-                  !       ! Delta E = E2 - E1 = Delta qv * C + Delta qc * lv + Delta qi * ls
-                  !       ! Delta q = 0 = Delta qv + Delta qc + Delta qi
-                  !       ! Q = qv1 + qc1 + qi1 = qv2 + qc2 + qi2
-                  !       ! Delta E = Delta qv * (C - lv) + Delta qi * (ls -lv)
-                  ! enddo
-               enddo
-
-               ! diabatic heating tendency, potential energy rho g h to be calculated in sedimentation later
-               do k = KS, KE
-                  RHOE_t(k,i,j) = ( Emoist(k,2) - Emoist(k,1) ) / dt
-      !!$             RHOE_t(k,i,j) = RHOE_t(k,i,j) + (tv(k)* &
-      !!$                  (CVtot(k,i,j) + &
-      !!$                  CVtot_t(k,i,j)*dt) - &
-      !!$                  TEMP(k,i,j)*CVtot(k,i,j))* &
-      !!$                  DENS(k,i,j)/dt
-               enddo
-
-
-            else
-
-               do k = KS, KE
-                  RHOE_t(k,i,j) = 0.0_RP
-               end do
-
-            endif MIC_IF
-         endif
-
-      enddo
-      enddo
-
-
-
-
-
-
-
-
-
-
-
-   endif
-
-
 
     TIME_AMPS = TIME_AMPS + 1
 
