@@ -2287,7 +2287,7 @@ contains
                ! ice and liquid difference
                do ibr = 1, nbr
                   Emoist(k,2) = Emoist(k,2) &
-                        + LHF0 * qrpv(rmt_q,ibr,1,k) * moist_denv(k)
+                        + LHF0 * (qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k) ) * moist_denv(k)
                enddo
                do ibi = 1, nbi
                   Emoist(k,2) = Emoist(k,2) &
