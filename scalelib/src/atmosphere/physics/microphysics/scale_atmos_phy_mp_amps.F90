@@ -1790,9 +1790,18 @@ contains
           enddo
 
 
-          do ibi = 1, nbi
-             Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
-          end do
+         if (.not. l_no_ice_heat) then
+            do ibi = 1, nbi
+               Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
+            end do
+         else
+            do ibr = 1, nbr
+               Emoist(k,1) = Emoist(k,1) - LHF0 * QTRC(k,i,j,I_QL+ibr-1) * DENS(k,i,j)
+            end do
+            do ibi = 1, nbi
+               Emoist(k,1) = Emoist(k,1) - LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
+            end do
+         endif
 
        enddo Z_LOOP_01
        ! set underground, this is used for surface flux
@@ -2255,21 +2264,37 @@ contains
 !-------------------------------------------------------------------------
 !--------------------------------------------------------------------------
 
-          do k = KS, KE
-             ! vapor difference
-             Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k) 
-             ! ice difference
-             do ibi = 1, nbi
-                Emoist(k,2) = Emoist(k,2) &
-                      + LHF0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
-                   ! E1 = qv1 * C + qc1 * lv + qi1 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
-                   ! E2 = qv2 * C + qc2 * lv + qi2 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
-                   ! Delta E = E2 - E1 = Delta qv * C + Delta qc * lv + Delta qi * ls
-                   ! Delta q = 0 = Delta qv + Delta qc + Delta qi
-                   ! Q = qv1 + qc1 + qi1 = qv2 + qc2 + qi2
-                   ! Delta E = Delta qv * (C - lv) + Delta qi * (ls -lv)
-             enddo
-          enddo
+          if (.not. l_no_ice_heat) then
+            do k = KS, KE
+               ! vapor difference
+               Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k) 
+               ! ice difference
+               do ibi = 1, nbi
+                  Emoist(k,2) = Emoist(k,2) &
+                        + LHF0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
+                     ! E1 = qv1 * C + qc1 * lv + qi1 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
+                     ! E2 = qv2 * C + qc2 * lv + qi2 * ls = Q * lv + qv2 * (C - lv) + qi2 * (ls - lv)
+                     ! Delta E = E2 - E1 = Delta qv * C + Delta qc * lv + Delta qi * ls
+                     ! Delta q = 0 = Delta qv + Delta qc + Delta qi
+                     ! Q = qv1 + qc1 + qi1 = qv2 + qc2 + qi2
+                     ! Delta E = Delta qv * (C - lv) + Delta qi * (ls -lv)
+               enddo
+            enddo
+          else
+            do k = KS, KE
+               ! vapor difference
+               Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k) 
+               ! ice and liquid difference
+               do ibr = 1, nbr
+                  Emoist(k,2) = Emoist(k,2) &
+                        + LHF0 * qrpv(rmt_q,ibr,1,k) * moist_denv(k)
+               enddo
+               do ibi = 1, nbi
+                  Emoist(k,2) = Emoist(k,2) &
+                        + LHF0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
+               enddo
+            enddo
+          endif
 
           ! diabatic heating tendency, potential energy rho g h to be calculated in sedimentation later
           do k = KS, KE
@@ -2929,11 +2954,11 @@ contains
 
    !
    !
-   !  compute water-only microphysics in a colum of cell grids where QICE > 1.e-8 if no_ice_heat is turned on
+   !  compute water-only microphysics in a colum of cell grids where QICE > 1.e-8 if l_no_ice_heat is turned on
    !
    !
 
-   if (l_no_ice_heat) then
+   if (.false.) then
       !$omp parallel do OMP_SCHEDULE_ collapse(2) default(none) &
       !$omp private(i,j,k,m, &
       !$omp         qrpv,qipv,qapv,qcv,qrv,qiv,qrpvm,qipvm,qapvm,qcvm,qrvm,qivm,qrov,qiov, &
