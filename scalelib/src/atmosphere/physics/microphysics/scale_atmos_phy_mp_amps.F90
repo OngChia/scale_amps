@@ -1342,7 +1342,7 @@ contains
 
     integer,parameter :: iproc_t=0
 
-    real(RP) :: Emoist(KS:KE,2)
+    real(RP) :: Emoist(KS:KE,2), ice_heat(KS:KE,2), liquid_heat(KS:KE,2)
     real(RP) :: dq
 
     ! history
@@ -1534,7 +1534,7 @@ contains
     !$omp         isect, &
     !$omp         pgnd,thskinv,spdsfcv, &
     !$omp         dzzmv,dzvmv, &
-    !$omp         Emoist,dq) &
+    !$omp         Emoist,dq,ice_heat,liquid_heat) &
     !$omp shared(CM, &
     !$omp        nz,nzh, &
     !$omp        IS,JS,KS,IE,JE,KE,IA,JA,KA, &
@@ -1795,11 +1795,13 @@ contains
                Emoist(k,1) = Emoist(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
             end do
          else
+            liquid_heat(k,1) = 0.0_RP
             do ibr = 1, nbr
-               Emoist(k,1) = Emoist(k,1) - LHF0 * QTRC(k,i,j,I_QL+ibr-1) * DENS(k,i,j)
+               liquid_heat(k,1) = liquid_heat(k,1) + LHF0 * QTRC(k,i,j,I_QL+ibr-1) * DENS(k,i,j)
             end do
+            ice_heat(k,1) = 0.0_RP
             do ibi = 1, nbi
-               Emoist(k,1) = Emoist(k,1) - LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
+               ice_heat(k,1) = ice_heat(k,1) + LHF0 * QTRC(k,i,j,I_QI+ibi-1) * DENS(k,i,j)
             end do
          endif
 
@@ -2284,15 +2286,22 @@ contains
             do k = KS, KE
                ! vapor difference
                Emoist(k,2) = - LHV0 * qvv(k) * moist_denv(k) 
-               ! ice and liquid difference
-               do ibr = 1, nbr
-                  Emoist(k,2) = Emoist(k,2) &
-                        + LHF0 * (qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k) ) * moist_denv(k)
-               enddo
-               do ibi = 1, nbi
-                  Emoist(k,2) = Emoist(k,2) &
-                        + LHF0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
-               enddo
+               ! ! ice and liquid difference
+               ! liquid_heat(k,2) = 0.0_RP
+               ! do ibr = 1, nbr
+               !    liquid_heat(k,2) = liquid_heat(k,2) &
+               !          + LHF0 * (qrpv(rmt_q,ibr,1,k) - qrpv(rmat_q,ibr,1,k) ) * moist_denv(k)
+               ! enddo
+               ! ice_heat(k,2) = 0.0_RP
+               ! do ibi = 1, nbi
+               !    ice_heat(k,2) = ice_heat(k,2) &
+               !          + LHF0 * ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k)
+               ! enddo
+               ! if (liquid_heat(k,2) - liquid_heat(k,1) < 0.0_RP .and. ice_heat(k,2) - ice_heat(k,1) > 0.0_RP) then
+               !    Emoist(k,2) = Emoist(k,2) + max(ice_heat(k,2) - ice_heat(k,1) + liquid_heat(k,2) - liquid_heat(k,1), 0.0_RP)
+               ! else
+               !    Emoist(k,2) = Emoist(k,2) + ice_heat(k,2) - ice_heat(k,1)
+               ! endif
             enddo
           endif
 
@@ -2915,8 +2924,13 @@ contains
              dq = dq + ( qipv(imt_q,ibi,1,k) - qipv(imw_q,ibi,1,k) - qipv(imat_q,ibi,1,k) ) * moist_denv(k) / DENS_NEW(k) &
                       - QTRC(k,i,j,I_QI+ibi-1)
           enddo
-          CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_ICE * dq / dt
-          CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_ICE * dq / dt
+          if (.not. l_no_ice_heat) then
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_ICE * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_ICE * dq / dt
+          else
+            CPtot_t(k,i,j) = CPtot_t(k,i,j) + CP_WATER * dq / dt
+            CVtot_t(k,i,j) = CVtot_t(k,i,j) + CV_WATER * dq / dt
+          endif
        enddo
 
        ! momentum flux, rhou_t, rhov_t, and surface flux were calculated in the sedimentation process
