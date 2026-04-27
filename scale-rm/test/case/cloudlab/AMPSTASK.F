@@ -58,7 +58,7 @@ dtype_s = 1
 ! 18. type of hydrodynamic breakup
 hbreak_s = 2
 ! 19. flag for prediction (concentration fixed?)
-flagp_s = 2
+flagp_s = 0
 !
 ! - aerosol group -
 ! 20. token (type of hydrometeor)
@@ -77,8 +77,8 @@ dtype_a = 3,4,3,3
 ! -5: initialize aerosol groups, but predict only IN category and pass it to dynamic model (mean radius fixed)
 ! -6: initialize aerosol groups, but do not pass any change of aerosols to dynamic model (mean radius fixed)
 !flagp_a = 1
-flagp_a = 2
-!flagp_a = -3
+!flagp_a = 2
+flagp_a = -3
 !
 ! 24. habit growth determination
 !     0: max frequency, 1: random number method
@@ -200,16 +200,16 @@ N_ap_ini = 317.0, 0.0, 0.0, 0.0,
 ! * character variable of options
 ! 1. DRCETB
 ! - directory where the collision coefficiency files are stored.
-DRCETB ='/cluster/scratch/congchia/scale_amps/scale-rm/test/case/cloudlab/AMPS_DATA/collision_data'
+DRCETB = '/capstor/scratch/cscs/cong/scale_amps/scale-rm/test/case/cloudlab/AMPS_DATA/collision_data'
 ! 2. IFMGTB
 ! - parameter or database file for mass-geometric relation of ice crystals.
 ! DRMGTB = 'prmRHI.v1.dat',
 ! 3. DRAPTB
 ! - directory where the aerosol activation file is stored.
-DRAPTB = '/cluster/scratch/congchia/scale_amps/scale-rm/test/case/cloudlab/AMPS_DATA/apact'
+DRAPTB = '/capstor/scratch/cscs/cong/scale_amps/scale-rm/test/case/cloudlab/AMPS_DATA/apact'
 ! 4. DRSTTB
 ! - directory where the statistics lookup table is stored.
-DRSTTB = '/cluster/scratch/congchia/scale_amps/scale-rm/test/case/cloudlab/AMPS_DATA/statpack'
+DRSTTB = '/capstor/scratch/cscs/cong/scale_amps/scale-rm/test/case/cloudlab/AMPS_DATA/statpack'
 !
 ! 5. Name of chemicals for aerosols
 ! APSNAME = 'NACL2','NACL2','NACL2'
@@ -235,7 +235,7 @@ frac_dust = 0.01D0
 !
 ! ice nucleation half life parameter
 !
-nucleation_halflife = 0.0001D0
+nucleation_halflife = 0.009939931331725D0
 !
 ! minimum dust radius (cm)
 !
@@ -281,9 +281,9 @@ n_step_vp = 10
 ! 17: ice nucleation; homogenious freezing
 !         0                 1
 !         1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
-!micexfg = 1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1
+micexfg = 1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1
 !micexfg = 1,1,1,1,1,1,1,1,0,1,0,0,0,0,0,1,0,1,1,1
-micexfg = 1,1,1,1,1,1,1,1,0,1,0,0,1,0,0,0,0,1,0,1
+!micexfg = 1,1,1,1,1,1,1,1,0,1,0,0,1,0,0,0,0,1,0,1
 
 !micexfg = 1,1,1,1,1,1,1,1,0,1,0,0,1,1,0,1,1,1,1,1
 !micexfg = 1,1,1,1,1,1,1,1,0,1,0,0,0,0,0,1,0,1,1,1

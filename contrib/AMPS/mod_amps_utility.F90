@@ -2709,6 +2709,7 @@ end subroutine cal_growth_mode_hex_inl_vec
  1011 format('seedini_',i2,'m')
  1002 format('seedini_',i3,'m')
  1003 format('seedini_',i4,'m')
+         seed(:) = 1
          open(31,file=numfil,action='READ')
 ! CHIARUI >>>>>>>>>> 8/4/2019
          !write(*,*) "number of seeds for random generator (before): ", sizeseed
@@ -2723,7 +2724,7 @@ end subroutine cal_growth_mode_hex_inl_vec
          close(31)
 !tmp      end if
       call random_seed(size=issz)
-      !write(*,*) "size of seed",issz,size(seed)
+      write(*,*) "size of seed",issz,size(seed), seed
       call random_seed(put=seed)
 
       end subroutine read_seed
