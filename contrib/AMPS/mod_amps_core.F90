@@ -16662,7 +16662,7 @@ contains
                   ,gamma_d,g%MS(i,n)%fac,g%MS(i,n)%mean_mass,d_mean_mass(i,n) &
 !!c               ,gamma_d,g%MS(i,n)%fac,d_mm_hex&
 !!c               ,gamma_d,g%MS(i,n)%fac,d_mean_mass/(1.0_PS+g%IS(i,n)%n_exice)&
-                  ,d_axis_len(i,n,1),d_axis_len(i,n,2))
+                  ,d_axis_len(i,n,1),d_axis_len(i,n,2),g%IS(i,n)%is_mod(2))
 
 !!c             call high_mode5(g%MS(i,n)%a_len,g%MS(i,n)%c_len,g%IS(i,n)%r,g%IS(i,n)%e&
 !!c                     ,Mp(i,n)/g%MS(i,n)%con,d_mean_mass,g%IS(i,n)%growth_mode&
@@ -16701,7 +16701,7 @@ contains
             call acd_mode(ag%TV(n),g%MS(i,n)%a_len,g%MS(i,n)%c_len&
                   ,ex_vden(i,n)&
                   ,gamma_d,g%MS(i,n)%fac,mass_ice,d_mm_ice&
-                  ,d_axis_len(i,n,1),d_axis_len(i,n,2))
+                  ,d_axis_len(i,n,1),d_axis_len(i,n,2),g%IS(i,n)%is_mod(2))
 
             if(d_mean_mass(i,n)<0.0_PS) then
               ! calculate diameter and mass of average crystal component
@@ -16771,7 +16771,7 @@ contains
                 call acd_mode(ag%TV(n),g%MS(i,n)%a_len,g%MS(i,n)%c_len&
                         ,ex_vden(i,n)&
                         ,gamma_d,g%MS(i,n)%fac,mass_ice,devap_ice&
-                        ,d_axis_len(i,n,1),d_axis_len(i,n,2))
+                        ,d_axis_len(i,n,1),d_axis_len(i,n,2),g%IS(i,n)%is_mod(2))
 
               case default
                 ! for aggregates and rimed aggregates
@@ -16804,7 +16804,7 @@ contains
                 call acd_mode(ag%TV(n),g%MS(i,n)%a_len,g%MS(i,n)%c_len&
                         ,ex_vden(i,n)&
                         ,gamma_d,g%MS(i,n)%fac,mass_ice,d_mm_ice&
-                        ,d_axis_len(i,n,1),d_axis_len(i,n,2))
+                        ,d_axis_len(i,n,1),d_axis_len(i,n,2),g%IS(i,n)%is_mod(2))
 
                 dia_ice=(g%IS(i,n)%V_ic/coefpi6)**(1.0_PS/3.0_PS)
                 den_ice=mass_ice/g%IS(i,n)%V_ic
@@ -17205,7 +17205,7 @@ contains
 
         call acd_mode(ag%TV(n),r0(n),r0(n)&
              ,ex_vden &
-             ,gamma_d,1.0_PS,am0(n),d_mean_mass,d_axis_len(1,n),d_axis_len(2,n))
+             ,gamma_d,1.0_PS,am0(n),d_mean_mass,d_axis_len(1,n),d_axis_len(2,n),g%IS(i,n)%is_mod(2))
 
 
         phi=(r0(n)+d_axis_len(2,n))/(r0(n)+d_axis_len(1,n))
@@ -17386,7 +17386,7 @@ contains
   end subroutine deposition_mode_vec
 
   subroutine acd_mode(th_var,alen,clen,ex_vden&
-       ,gamma,fac,mean_mass,d_mean_mass,d_axis_len1,d_axis_len2)
+       ,gamma,fac,mean_mass,d_mean_mass,d_axis_len1,d_axis_len2,is_mod2)
     implicit none
     ! level of complexity
     !integer, intent(in)           :: level
@@ -17418,6 +17418,11 @@ contains
     ! bulk density of the spheroid
     real(PS)                    :: den_sr
 
+    ! ZHY parameteirzations for the effective density
+    integer, intent(in) :: is_mod2
+    real(PS), parameter         :: zhy_a = 0.0487_PS, zhy_b = 2.045_PS, zhy_dens_max = 796.2_PS
+    real(PS) :: xlen
+
     ! maximum and minimum aspect ratio
     real(PS),parameter  :: phi_max=2.0e+1,phi_min=5.0e-3
 
@@ -17437,14 +17442,20 @@ contains
     i_tmp_le0=0.5*(1.0+sign(1.0_PS,273.16_PS-th_var%T))
     i_dm_ge0=0.5*(1.0+sign(1.0_PS,d_mean_mass))
 
-    dep_den=real(i_tmp_le0,PS_KIND)*&
-       ! +++ calculate the mass density at the time of deposition based on
-       !     Chen and Lamb (1994a)
-              max( 0.91_PS * exp( -3.0_PS*&
-              max( ex_vden*1.0e+6_PS - 0.05_PS, 0.0_PS)/gamma), 1.0e-1_PS) &
-           +(1.0-real(i_tmp_le0,PS_KIND))*&
-              0.91_PS
+    ! dep_den=real(i_tmp_le0,PS_KIND)*&
+    !    ! +++ calculate the mass density at the time of deposition based on
+    !    !     Chen and Lamb (1994a)
+    !           max( 0.91_PS * exp( -3.0_PS*&
+    !           max( ex_vden*1.0e+6_PS - 0.05_PS, 0.0_PS)/gamma), 1.0e-1_PS) &
+    !        +(1.0-real(i_tmp_le0,PS_KIND))*&
+    !           0.91_PS
 
+  call cal_halfmaxdim_ip(xlen, is_mod2, alen, clen)
+  if alen > 0.0_PS then
+    dep_den = 6.0_PS * zhy_a * xlen**(zhy_b - 3.0_PS) / PI / (clen / alen)**2
+  else
+    dep_den = zhy_dens_max
+  end if
 
     dv = d_mean_mass/dep_den
 
