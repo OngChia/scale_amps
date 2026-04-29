@@ -17205,7 +17205,7 @@ contains
 
         call acd_mode(ag%TV(n),r0(n),r0(n)&
              ,ex_vden &
-             ,gamma_d,1.0_PS,am0(n),d_mean_mass,d_axis_len(1,n),d_axis_len(2,n),g%IS(i,n)%is_mod(2))
+             ,gamma_d,1.0_PS,am0(n),d_mean_mass,d_axis_len(1,n),d_axis_len(2,n),gs%IS(i,n)%is_mod(2))
 
 
         phi=(r0(n)+d_axis_len(2,n))/(r0(n)+d_axis_len(1,n))
@@ -17387,6 +17387,8 @@ contains
 
   subroutine acd_mode(th_var,alen,clen,ex_vden&
        ,gamma,fac,mean_mass,d_mean_mass,d_axis_len1,d_axis_len2,is_mod2)
+    use class_Ice_Shape, only: &
+       cal_halfmaxdim_ip
     implicit none
     ! level of complexity
     !integer, intent(in)           :: level
@@ -17450,12 +17452,12 @@ contains
     !        +(1.0-real(i_tmp_le0,PS_KIND))*&
     !           0.91_PS
 
-  call cal_halfmaxdim_ip(xlen, is_mod2, alen, clen)
-  if alen > 0.0_PS then
-    dep_den = 6.0_PS * zhy_a * xlen**(zhy_b - 3.0_PS) / PI / (clen / alen)**2
-  else
-    dep_den = zhy_dens_max
-  end if
+    call cal_halfmaxdim_ip(xlen, is_mod2, alen, clen)
+    if (alen > 0.0_PS) then
+      dep_den = 6.0_PS * zhy_a * (2.0_PS * xlen)**(zhy_b - 3.0_PS) / PI / (clen / alen)**2
+    else
+      dep_den = zhy_dens_max
+    end if
 
     dv = d_mean_mass/dep_den
 
