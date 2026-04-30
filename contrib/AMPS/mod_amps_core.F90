@@ -17422,7 +17422,7 @@ contains
 
     ! ZHY parameteirzations for the effective density
     integer, intent(in) :: is_mod2
-    real(PS), parameter         :: zhy_a = 0.0487_PS, zhy_b = 2.045_PS, zhy_dens_max = 796.2_PS
+    real(PS), parameter         :: zhy_a = 0.0487_PS, zhy_b = 2.045_PS, zhy_dens_max = 0.7962_PS
     real(PS) :: xlen
 
     ! maximum and minimum aspect ratio
@@ -17454,7 +17454,7 @@ contains
 
     call cal_halfmaxdim_ip(xlen, is_mod2, alen, clen)
     if (alen > 0.0_PS) then
-      dep_den = 6.0_PS * zhy_a * (2.0_PS * xlen)**(zhy_b - 3.0_PS) / PI / (clen / alen)**2
+      dep_den = 0.001_PS * 6.0_PS * zhy_a * (2.0_PS * xlen * 0.01_PS)**(zhy_b - 3.0_PS) / PI / (clen / alen)**2
     else
       dep_den = zhy_dens_max
     end if
