@@ -17449,7 +17449,7 @@ contains
     fgamma = fac*gamma
 
     call cal_halfmaxdim_ip(xlen, is_mod2, alen, clen)
-    ice_density = 0.006_PS * zhy_a_dens * (xlen * 0.01_PS)**(zhy_b - 3.0_PS) / PI / (clen / alen)**2
+    ice_density = 0.006_PS * zhy_a * (xlen * 0.01_PS)**(zhy_b - 3.0_PS) / PI / (clen / alen)**2
     if (ice_density > zhy_dens_max .or. alen < 1.e-30 .or. clen < 1.e-30) then
       dep_den=real(i_tmp_le0,PS_KIND)*&
        ! +++ calculate the mass density at the time of deposition based on
