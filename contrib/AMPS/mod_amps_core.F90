@@ -17423,7 +17423,7 @@ contains
     ! ZHY parameteirzations for the effective density
     integer, intent(in) :: is_mod2
     real(PS), parameter         :: zhy_a = 0.0487_PS, zhy_b = 2.045_PS, zhy_dens_max = 0.7962_PS
-    real(PS) :: xlen
+    real(PS) :: xlen, ice_density
 
     ! maximum and minimum aspect ratio
     real(PS),parameter  :: phi_max=2.0e+1,phi_min=5.0e-3
@@ -17444,59 +17444,61 @@ contains
     i_tmp_le0=0.5*(1.0+sign(1.0_PS,273.16_PS-th_var%T))
     i_dm_ge0=0.5*(1.0+sign(1.0_PS,d_mean_mass))
 
-    ! dep_den=real(i_tmp_le0,PS_KIND)*&
-    !    ! +++ calculate the mass density at the time of deposition based on
-    !    !     Chen and Lamb (1994a)
-    !           max( 0.91_PS * exp( -3.0_PS*&
-    !           max( ex_vden*1.0e+6_PS - 0.05_PS, 0.0_PS)/gamma), 1.0e-1_PS) &
-    !        +(1.0-real(i_tmp_le0,PS_KIND))*&
-    !           0.91_PS
-
-    call cal_halfmaxdim_ip(xlen, is_mod2, alen, clen)
-    if (alen > 0.0_PS) then
-      dep_den = 0.001_PS * 6.0_PS * zhy_a * (2.0_PS * xlen * 0.01_PS)**(zhy_b - 3.0_PS) / PI / (clen / alen)**2
-    else
-      dep_den = zhy_dens_max
-    end if
-
-    dv = d_mean_mass/dep_den
-
     ! +++ modify the inherent growth ratio to take the ventilation effects +++
     ! +++ into account.                                                    +++
     fgamma = fac*gamma
-    !
-    ! NOTE if the ratio of dv/v is too small, or lengths are too small compared to
-    ! volume change, then axis length change becomes too large.
-    ! This can lead to unrealistic bulk sphere density.
-    ! a-axis
-    !  So, we assume that during the evaporation
-    !    1. axis ratio
-    !    2. bulk density
-    !    are conserved.
-!org    d_axis_len1 = alen * (dv/v)/(fgamma+2.0_PS)
-    d_axis_len1 = real(i_dm_ge0,PS_KIND)*alen * (dv/v)/(fgamma+2.0_PS) +&
-              (1.0_RP-real(i_dm_ge0,PS_KIND))*(&
-         (max(0.0_RP,mean_mass+d_mean_mass)/(den_sr*coef4pi3*clen/alen))**(1.0_RP/3.0_RP)-&
-           alen)
-    ! c-axis
-!org    d_axis_len2 = clen * (dv/v)*fgamma/(fgamma+2.0_PS)
-    d_axis_len2 = real(i_dm_ge0,PS_KIND)*clen * (dv/v)*fgamma/(fgamma+2.0_PS) +&
-              (1.0_RP-real(i_dm_ge0,PS_KIND))*(&
-              clen/alen*d_axis_len1)
 
-!dbg    v_cs = coef4pi3*((alen+d_axis_len1)**2+(clen+d_axis_len2)**2 )**1.5_RP
-!dbg    den_cs=(mean_mass+d_mean_mass)/v_cs
-!dbg    v = coef4pi3*(alen+d_axis_len1)**2*(clen+d_axis_len2)
-!dbg    den_sr=(mean_mass+d_mean_mass)/v
-!!c    write(*,'("acd_mode:",I5,20ES15.6)')i_dm_ge0,d_mean_mass,dep_den,alen,clen,den_sr0,den_sr,&
-!!c         den_cs0,den_cs,&
-!!c         clen/alen,(clen+d_axis_len2)/(alen+d_axis_len1)
-!         alen * (dv/v)/(fgamma+2.0_PS),d_mean_mass/(den_sr*coef4pi3*clen/alen),&
-!         clen * (dv/v)*fgamma/(fgamma+2.0_PS),&
-!         (1.0_RP-real(i_dm_ge0))*d_mean_mass/(den_sr*coef4pi3*alen*alen/(clen*clen))
+    call cal_halfmaxdim_ip(xlen, is_mod2, alen, clen)
+    ice_density = 0.006_PS * zhy_a_dens * (xlen * 0.01_PS)**(zhy_b - 3.0_PS) / PI / (clen / alen)**2
+    if (ice_density > zhy_dens_max .or. alen < 1.e-30 .or. clen < 1.e-30) then
+      dep_den=real(i_tmp_le0,PS_KIND)*&
+       ! +++ calculate the mass density at the time of deposition based on
+       !     Chen and Lamb (1994a)
+              max( 0.91_PS * exp( -3.0_PS*&
+              max( ex_vden*1.0e+6_PS - 0.05_PS, 0.0_PS)/gamma), 1.0e-1_PS) &
+           +(1.0-real(i_tmp_le0,PS_KIND))*&
+              0.91_PS
 
+      dv = d_mean_mass/dep_den
+      !
+      ! NOTE if the ratio of dv/v is too small, or lengths are too small compared to
+      ! volume change, then axis length change becomes too large.
+      ! This can lead to unrealistic bulk sphere density.
+      ! a-axis
+      !  So, we assume that during the evaporation
+      !    1. axis ratio
+      !    2. bulk density
+      !    are conserved.
+  !org    d_axis_len1 = alen * (dv/v)/(fgamma+2.0_PS)
+      d_axis_len1 = real(i_dm_ge0,PS_KIND)*alen * (dv/v)/(fgamma+2.0_PS) +&
+                (1.0_RP-real(i_dm_ge0,PS_KIND))*(&
+          (max(0.0_RP,mean_mass+d_mean_mass)/(den_sr*coef4pi3*clen/alen))**(1.0_RP/3.0_RP)-&
+            alen)
+      ! c-axis
+  !org    d_axis_len2 = clen * (dv/v)*fgamma/(fgamma+2.0_PS)
+      d_axis_len2 = real(i_dm_ge0,PS_KIND)*clen * (dv/v)*fgamma/(fgamma+2.0_PS) +&
+                (1.0_RP-real(i_dm_ge0,PS_KIND))*(&
+                clen/alen*d_axis_len1)
 
+  !dbg    v_cs = coef4pi3*((alen+d_axis_len1)**2+(clen+d_axis_len2)**2 )**1.5_RP
+  !dbg    den_cs=(mean_mass+d_mean_mass)/v_cs
+  !dbg    v = coef4pi3*(alen+d_axis_len1)**2*(clen+d_axis_len2)
+  !dbg    den_sr=(mean_mass+d_mean_mass)/v
+  !!c    write(*,'("acd_mode:",I5,20ES15.6)')i_dm_ge0,d_mean_mass,dep_den,alen,clen,den_sr0,den_sr,&
+  !!c         den_cs0,den_cs,&
+  !!c         clen/alen,(clen+d_axis_len2)/(alen+d_axis_len1)
+  !         alen * (dv/v)/(fgamma+2.0_PS),d_mean_mass/(den_sr*coef4pi3*clen/alen),&
+  !         clen * (dv/v)*fgamma/(fgamma+2.0_PS),&
+  !         (1.0_RP-real(i_dm_ge0))*d_mean_mass/(den_sr*coef4pi3*alen*alen/(clen*clen))
 
+    else
+      dv = 20.0_PS * zhy_a * (xlen * 0.01_PS)**zhy_b * alen / clen * ( &
+        2.0_PS * zhy_b / (xlen * 0.01_PS)**2 * alen**2 / clen * 0.01_PS * (fgamma * (clen / alen)**2 + 1.0_PS) &
+        - (fgamma - 1.0_PS) / (clen * 0.01_PS) )
+
+      d_axis_len1 = d_mean_mass / dv
+      d_axis_len2 = fgamma * clen / alen * d_axis_len1
+    end if
 
     ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   end subroutine acd_mode
